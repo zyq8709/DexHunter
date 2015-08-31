@@ -10,6 +10,9 @@ It is worth noting that some "annotation_off" or "debug_info_off" fields may be 
 As is known, some hardening services can protect several methods in the dex file by restoring the instructions just before being executed and wiping them just after finished. So you also need to modify the "DoInvoke" (ART) or "dvmMterp_invokeMethod" (DVM) function to extract the protected instruction while being executed.
 
 "slide.pptx" is the presentation material of HITCON 2015 depicting the design and implementation of DexHunter.
+
 "demo.mp4" is the demonstration video of DexHunter.
+
 "art" directory is the modified runtime for ART.
+
 "dalvik" directory is the modified runtime for DVM.
