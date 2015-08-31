@@ -11,7 +11,7 @@ As is known, some hardening services can protect several methods in the dex file
 
 "slide.pptx" is the presentation material of HITCON 2015 depicting the design and implementation of DexHunter.
 
-"demo.mp4" is the demonstration video of DexHunter.
+"demo.mp4" is the demonstration video of unpacking a hardened app by Ali.
 
 "art" directory is the modified runtime for ART.
 
