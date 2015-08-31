@@ -1,0 +1,2 @@
+This is a test to verify that duplicate methods in a dex file are handled
+properly (all but the first are ignored).

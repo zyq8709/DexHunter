@@ -1,0 +1,112 @@
+#!/bin/sh
+#
+# Run the code in test.jar using the host-mode virtual machine. The jar should
+# contain a top-level class named Main to run.
+
+msg() {
+    if [ "$QUIET" = "n" ]; then
+        echo "$@"
+    fi
+}
+
+LIB="libartd.so"
+DEBUGGER="n"
+GDB="n"
+INTERPRETER="n"
+VERIFY="y"
+OPTIMIZE="y"
+INVOKE_WITH=""
+DEV_MODE="n"
+QUIET="n"
+
+while true; do
+    if [ "x$1" = "x--quiet" ]; then
+        QUIET="y"
+        shift
+    elif [ "x$1" = "x-lib" ]; then
+        shift
+        LIB="$1"
+    elif [ "x$1" = "x-O" ]; then
+        LIB="libart.so"
+        shift
+    elif [ "x$1" = "x--debug" ]; then
+        DEBUGGER="y"
+        shift
+    elif [ "x$1" = "x--gdb" ]; then
+        GDB="y"
+        DEV_MODE="y"
+        shift
+    elif [ "x$1" = "x--invoke-with" ]; then
+        shift
+        if [ "x$INVOKE_WITH" = "x" ]; then
+            INVOKE_WITH="$1"
+        else
+            INVOKE_WITH="$INVOKE_WITH $1"
+        fi
+        shift
+    elif [ "x$1" = "x--dev" ]; then
+        DEV_MODE="y"
+        shift
+    elif [ "x$1" = "x--interpreter" ]; then
+        INTERPRETER="y"
+        shift
+    elif [ "x$1" = "x--no-verify" ]; then
+        VERIFY="n"
+        shift
+    elif [ "x$1" = "x--no-optimize" ]; then
+        OPTIMIZE="n"
+        shift
+    elif [ "x$1" = "x--" ]; then
+        shift
+        break
+    elif expr "x$1" : "x--" >/dev/null 2>&1; then
+        echo "unknown $0 option: $1" 1>&2
+        exit 1
+    else
+        break
+    fi
+done
+
+msg "------------------------------"
+
+mkdir $DEX_LOCATION/dalvik-cache
+[[ $? -ne 0 ]] && exit
+
+export ANDROID_PRINTF_LOG=brief
+if [ "$DEV_MODE" = "y" ]; then
+    export ANDROID_LOG_TAGS='*:d'
+else
+    export ANDROID_LOG_TAGS='*:s'
+fi
+export ANDROID_DATA="$DEX_LOCATION"
+export ANDROID_ROOT="${ANDROID_HOST_OUT}"
+export LD_LIBRARY_PATH="${ANDROID_ROOT}/lib"
+export DYLD_LIBRARY_PATH="${ANDROID_ROOT}/lib"
+unset ANDROID_PRODUCT_OUT # avoid defaulting dex2oat --host-prefix to target output
+
+exe="${ANDROID_ROOT}/bin/dalvikvm"
+
+if [ "$DEBUGGER" = "y" ]; then
+    PORT=8000
+    msg "Waiting for jdb to connect:"
+    msg "    jdb -attach localhost:$PORT"
+    DEBUGGER_OPTS="-agentlib:jdwp=transport=dt_socket,address=$PORT,server=y,suspend=y"
+fi
+
+if [ "$GDB" = "y" ]; then
+    gdb=gdb
+    gdbargs="--args $exe"
+    # Enable for Emacs "M-x gdb" support. TODO: allow extra gdb arguments on command line.
+    # gdbargs="--annotate=3 $gdbargs"
+fi
+
+if [ "$INTERPRETER" = "y" ]; then
+    INT_OPTS="-Xint"
+fi
+
+JNI_OPTS="-Xjnigreflimit:512 -Xcheck:jni"
+
+cd $ANDROID_BUILD_TOP
+$INVOKE_WITH $gdb $exe $gdbargs -XXlib:$LIB -Ximage:$ANDROID_ROOT/framework/core.art \
+    $JNI_OPTS $INT_OPTS $DEBUGGER_OPTS \
+    -cp $DEX_LOCATION/$TEST_NAME.jar Main "$@"

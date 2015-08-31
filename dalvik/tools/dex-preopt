@@ -1,0 +1,320 @@
+#!/bin/bash
+#
+# Copyright (C) 2010 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Usage: dex-preopt [options] path/to/input.jar path/to/output.odex
+#
+# This tool runs a host build of dalvikvm in order to preoptimize dex
+# files that will be run on a device.
+#
+# The input may be any sort of jar file (including .apk files), as long
+# as it contains a classes.dex file. Note that optimized versions of
+# bootstrap classes must be created before this can be run on other files;
+# use the "--bootstrap" option to do this.
+#
+# The "output.odex" file must not already exist.
+#
+# This is expected to be running in a user build environment, where
+# "dexopt" is available on the host.
+#
+# Options:
+#   --build-dir=path/to/out -- Specify where the base of the build tree is.
+#     This is typically a directory named "out". If not specified, it is
+#     assumed to be the current directory. The specified input and output
+#     paths are taken to be relative to this directory.
+#   --dexopt=path/to/dexopt -- Specify the path to the dexopt executable.
+#     If unspecified, there must be a unique subdirectory of the build-dir
+#     that looks like host/ARCH/bin which must contain dexopt.
+#   --product-dir=path/to/product -- Specify the path, relative to the build
+#     directory, where the product tree to be used is. This directory should
+#     contain the boot classpath jar files. If not specified, then there
+#     must be a unique directory in the build named "target/product/NAME",
+#     and this is the directory that will be used.
+#   --boot-dir=path/to/bootclasspath -- Specify the path, relative to the
+#     product directory, of the directory where the boot classpath files
+#     reside. If not specified, this defaults to "system/framework"
+#   --boot-jars=list:of:jar:base:names -- Specify the list of base names
+#     of bootstrap classpath elements, colon-separated. Order is significant
+#     and must match the BOOTCLASSPATH that is eventually specified at
+#     runtime on the device. This defaults to "core". However, this really
+#     needs to match the target product's BOOTCLASSPATH, which, as of this
+#     writing, doesn't have a super-strict way of being defined within the
+#     build. You can find variations of it in different init.rc files under
+#     system/core/rootdir or under product-specific directories.
+#   --bootstrap -- Process the bootstrap classes. If this is specified,
+#     then, instead of processing a specified input file, no other arguments
+#     are taken, and what is processed is the entirety of the boot jar
+#     list, in order.
+#   --verify={none,remote,all} -- Specify what level of verification to
+#     do. Defaults to "all".
+#   --optimize={none,verified,all} -- Specify which classes to optimize.
+#     Defaults to "verified".
+#   --no-register-maps -- Indicate that the output should not contain
+#     register maps. By default, register maps are created and included.
+#   --uniprocessor -- Indicate that the output should target a uniprocessor.
+#     By default, optimizations will be made that specifically target
+#     SMP processors (which will merely be superfluous on uniprocessors).
+#
+
+# Defaults.
+dexopt=''
+buildDir='.'
+productDir=''
+bootDir='system/framework'
+bootstrap='no'
+doVerify='all'
+doOptimize='verified'
+doRegisterMaps='yes'
+doUniprocessor='no'
+bootJars='core'
+
+optimizeFlags='' # built up from the more human-friendly options
+bogus='no' # indicates if there was an error during processing arguments
+
+# Iterate over the arguments looking for options.
+while true; do
+    origOption="$1"
+
+    if [ "x${origOption}" = "x--" ]; then
+        # A raw "--" signals the end of option processing.
+        shift
+        break
+    fi
+
+    # Parse the option into components.
+    optionBeforeValue=`expr -- "${origOption}" : '--\([^=]*\)='`
+
+    if [ "$?" = '0' ]; then
+        # Option has the form "--option=value".
+        option="${optionBeforeValue}"
+        value=`expr -- "${origOption}" : '--[^=]*=\(.*\)'`
+        hasValue='yes'
+    else
+        option=`expr -- "${origOption}" : '--\(.*\)'`
+        if [ "$?" = '1' ]; then
+            # Not an option.
+            break
+        fi
+        # Option has the form "--option".
+        value=""
+        hasValue='no'
+    fi
+    shift
+
+    # Interpret the option
+    if [ "${option}" = 'build-dir' -a "${hasValue}" = 'yes' ]; then
+        buildDir="${value}"
+    elif [ "${option}" = 'dexopt' -a "${hasValue}" = 'yes' ]; then
+        dexopt="${value}"
+    elif [ "${option}" = 'boot-dir' -a "${hasValue}" = 'yes' ]; then
+        bootDir="${value}"
+    elif [ "${option}" = 'product-dir' -a "${hasValue}" = 'yes' ]; then
+        productDir="${value}"
+    elif [ "${option}" = 'boot-jars' -a "${hasValue}" = 'yes' ]; then
+        bootJars="${value}"
+    elif [ "${option}" = 'bootstrap' -a "${hasValue}" = 'no' ]; then
+        bootstrap='yes'
+    elif [ "${option}" = 'verify' -a "${hasValue}" = 'yes' ]; then
+        doVerify="${value}"
+    elif [ "${option}" = 'optimize' -a "${hasValue}" = 'yes' ]; then
+        doOptimize="${value}"
+    elif [ "${option}" = 'no-register-maps' -a "${hasValue}" = 'no' ]; then
+        doRegisterMaps='no'
+    elif [ "${option}" = 'uniprocessor' -a "${hasValue}" = 'no' ]; then
+        doUniprocessor='yes'
+    else
+        echo "unknown option: ${origOption}" 1>&2
+        bogus='yes'
+    fi
+done
+
+# Check and set up the input and output files. In the case of bootstrap
+# processing, verify that no files are specified.
+inputFile=$1
+outputFile=$2
+if [ "${bootstrap}" = 'yes' ]; then
+    if [ "$#" != '0' ]; then
+        echo "unexpected arguments in --bootstrap mode" 1>&2
+        bogus=yes
+    fi
+elif [ "$#" != '2' ]; then
+    echo "must specify input and output files (and no more arguments)" 1>&2
+    bogus=yes
+fi
+
+# Sanity-check the specified build directory.
+if [ "x${buildDir}" = 'x' ]; then
+    echo "must specify build directory" 1>&2
+    bogus=yes
+elif [ ! '(' -d "${buildDir}" -a -w "${buildDir}" ')' ]; then
+    echo "build-dir is not a writable directory: ${buildDir}" 1>&2
+    bogus=yes
+fi
+
+# Sanity-check the specified boot classpath directory.
+if [ "x${bootDir}" = 'x' ]; then
+    echo "must specify boot classpath directory" 1>&2
+    bogus=yes
+fi
+
+# Sanity-check the specified boot jar list.
+if [ "x${bootJars}" = 'x' ]; then
+    echo "must specify non-empty boot-jars list" 1>&2
+    bogus=yes
+fi
+
+# Sanity-check and expand the verify option.
+if [ "x${doVerify}" = 'xnone' ]; then
+    optimizeFlags="${optimizeFlags},v=n"
+elif [ "x${doVerify}" = 'xremote' ]; then
+    optimizeFlags="${optimizeFlags},v=r"
+elif [ "x${doVerify}" = 'xall' ]; then
+    optimizeFlags="${optimizeFlags},v=a"
+else
+    echo "bad value for --verify: ${doVerify}" 1>&2
+    bogus=yes
+fi
+
+# Sanity-check and expand the optimize option.
+if [ "x${doOptimize}" = 'xnone' ]; then
+    optimizeFlags="${optimizeFlags},o=n"
+elif [ "x${doOptimize}" = 'xverified' ]; then
+    optimizeFlags="${optimizeFlags},o=v"
+elif [ "x${doOptimize}" = 'xall' ]; then
+    optimizeFlags="${optimizeFlags},o=a"
+else
+    echo "bad value for --optimize: ${doOptimize}" 1>&2
+    bogus=yes
+fi
+
+# Expand the register maps selection, if necessary.
+if [ "${doRegisterMaps}" = 'yes' ]; then
+    optimizeFlags="${optimizeFlags},m=y"
+fi
+
+# Expand the uniprocessor directive, if necessary.
+if [ "${doUniprocessor}" = 'yes' ]; then
+    optimizeFlags="${optimizeFlags},u=y"
+else
+    optimizeFlags="${optimizeFlags},u=n"
+fi
+
+# Kill off the spare comma in optimizeFlags.
+optimizeFlags=`echo ${optimizeFlags} | sed 's/^,//'`
+
+# Error out if there was trouble.
+if [ "${bogus}" = 'yes' ]; then
+    # There was an error during option processing.
+    echo "usage: $0" 1>&2
+    echo '  [--build-dir=path/to/out] [--dexopt=path/to/dexopt]' 1>&2
+    echo '  [--product-dir=path/to/product] [--boot-dir=name]' 1>&2
+    echo '  [--boot-jars=list:of:names] [--bootstrap]' 1>&2
+    echo '  [--verify=type] [--optimize=type] [--no-register-maps]' 1>&2
+    echo '  [--uniprocessor] path/to/input.jar path/to/output.odex' 1>&2
+    exit 1
+fi
+
+# Cd to the build directory, un-symlinkifying it for clarity.
+cd "${buildDir}"
+cd "`/bin/pwd`"
+
+# If needed, find the default product directory.
+if [ "x${productDir}" = 'x' ]; then
+    productDir="`ls target/product`"
+    if [ "$?" != '0' ]; then
+        echo "can't find product directory" 1>&2
+        exit 1
+    elif [ `expr -- "${productDir}" : ".* "` != '0' ]; then
+        echo "ambiguous product directory" 1>&2
+        exit 1
+    fi
+    productDir="target/product/${productDir}"
+fi
+
+# Verify the product directory.
+if [ ! '(' -d "${productDir}" -a -w "${productDir}" ')' ]; then
+    echo "product-dir is not a writable directory: ${productDir}" 1>&2
+    exit 1
+fi
+
+# Expand and verify the boot classpath directory. We add "/./" here to
+# separate the build system part of the path from the target system
+# suffix part of the path. The dexopt executable (deep inside the vm
+# really) uses this to know how to generate the names of the
+# dependencies (since we don't want the device files to contain bits
+# of pathname from the host build system).
+productBootDir="${productDir}/./${bootDir}"
+if [ ! '(' -d "${productBootDir}" -a -w "${productBootDir}" ')' ]; then
+    echo "boot-dir is not a writable directory: ${productBootDir}" 1>&2
+    exit 1
+fi
+
+# Find the dexopt binary if necesasry, and verify it.
+if [ "x${dexopt}" = 'x' ]; then
+    dexopt="`ls host/*/bin/dexopt`"
+    if [ "$?" != '0' ]; then
+        echo "can't find dexopt binary" 1>&2
+        exit 1
+    elif [ `expr -- "${dexopt}" : ".* "` != '0' ]; then
+        echo "ambiguous host directory" 1>&2
+        exit 1
+    fi
+fi
+if [ ! -x "${dexopt}" ]; then
+    echo "dexopt binary is not executable: ${dexopt}" 1>&2
+    exit 1
+fi
+
+# Expand the bootJars into paths that are relative from the build
+# directory, maintaining the colon separators.
+BOOTCLASSPATH=`echo ":${bootJars}" | \
+    sed "s!:\([^:]*\)!:${productBootDir}/\1.jar!g" | \
+    sed 's/^://'`
+export BOOTCLASSPATH
+
+if [ "${bootstrap}" = 'yes' ]; then
+    # Split the boot classpath into separate elements and iterate over them,
+    # processing each, in order.
+    elements=`echo "${BOOTCLASSPATH}" | sed 's/:/ /g'`
+
+    for inputFile in $elements; do
+        echo "Processing ${inputFile}" 1>&2
+        outputFile="`dirname ${inputFile}`/`basename ${inputFile} .jar`.odex"
+        "${dexopt}" --preopt "${inputFile}" "${outputFile}" "${optimizeFlags}"
+        status="$?"
+        if [ "${status}" != '0' ]; then
+            exit "${status}"
+        fi
+    done
+else
+    echo "Processing ${inputFile}" 1>&2
+
+    bootJarFile=`expr -- "${inputFile}" : "${productDir}/${bootDir}/\(.*\)"`
+    if [ "x${bootJarFile}" != 'x' ]; then
+        # The input file is in the boot classpath directory, so it needs
+        # to have "/./" inserted into it (see longer description above).
+        inputFile="${productBootDir}/${bootJarFile}"
+    fi
+
+    "${dexopt}" --preopt "${inputFile}" "${outputFile}" "${optimizeFlags}"
+
+    status="$?"
+    if [ "${status}" != '0' ]; then
+        exit "${status}"
+    fi
+fi
+
+echo "Done!" 1>&2

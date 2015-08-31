@@ -1,0 +1,1803 @@
+/*
+ * Copyright (C) 2012 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// DEF_INTRINSICS_FUNC(ID, NAME, ATTR, RET_TYPE,
+//                     ARG1_TYPE, ARG2_TYPE, ARG3_TYPE, ARG4_TYPE, ARG5_TYPE)
+#ifndef DEF_INTRINSICS_FUNC
+#  error "missing DEF_INTRINSICS_FUNC definition!"
+#endif
+
+#define _EVAL_DEF_INTRINSICS_FUNC(ID, NAME, ATTR, RET_TYPE, ...) \
+    DEF_INTRINSICS_FUNC(ID, NAME, ATTR, RET_TYPE, __VA_ARGS__)
+
+#define _EXPAND_ARG0()                         kNone, kNone, kNone, kNone, kNone
+#define _EXPAND_ARG1(ARG1)                      ARG1, kNone, kNone, kNone, kNone
+#define _EXPAND_ARG2(ARG1, ARG2)                ARG1,  ARG2, kNone, kNone, kNone
+#define _EXPAND_ARG3(ARG1, ARG2, ARG3)          ARG1,  ARG2,  ARG3, kNone, kNone
+#define _EXPAND_ARG4(ARG1, ARG2, ARG3, ARG4)    ARG1,  ARG2,  ARG3,  ARG4, kNone
+#define _EXPAND_ARG5(ARG1, ARG2, ARG3, ARG4, ARG5) \
+                                                ARG1,  ARG2,  ARG3,  ARG4,  ARG5
+
+#define _JTYPE(TYPE, SPACE) _JTYPE_OF_ ## TYPE ## _UNDER_ ## SPACE
+
+// Note: These should be consistent with the type return from
+// IRBuilder::GetJType([type], kArray).
+#define _JTYPE_OF_kInt1Ty_UNDER_kArray        kInt8Ty
+#define _JTYPE_OF_kInt8Ty_UNDER_kArray        kInt8Ty
+#define _JTYPE_OF_kInt16Ty_UNDER_kArray       kInt16Ty
+#define _JTYPE_OF_kInt32Ty_UNDER_kArray       kInt32Ty
+#define _JTYPE_OF_kInt64Ty_UNDER_kArray       kInt64Ty
+#define _JTYPE_OF_kJavaObjectTy_UNDER_kArray  kJavaObjectTy
+
+// Note: These should be consistent with the type return from
+// IRBuilder::GetJType([type], kField).
+#define _JTYPE_OF_kInt1Ty_UNDER_kField        kInt32Ty
+#define _JTYPE_OF_kInt8Ty_UNDER_kField        kInt32Ty
+#define _JTYPE_OF_kInt16Ty_UNDER_kField       kInt32Ty
+#define _JTYPE_OF_kInt32Ty_UNDER_kField       kInt32Ty
+#define _JTYPE_OF_kInt64Ty_UNDER_kField       kInt64Ty
+#define _JTYPE_OF_kJavaObjectTy_UNDER_kField  kJavaObjectTy
+
+//----------------------------------------------------------------------------
+// Thread
+//----------------------------------------------------------------------------
+
+// Thread* art_portable_get_current_thread()
+_EVAL_DEF_INTRINSICS_FUNC(GetCurrentThread,
+                          art_portable_get_current_thread,
+                          kAttrReadNone | kAttrNoThrow,
+                          kJavaThreadTy,
+                          _EXPAND_ARG0())
+
+// void art_portable_test_suspend(Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(TestSuspend,
+                          art_portable_test_suspend,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG1(kJavaThreadTy))
+
+// void art_portable_check_suspend() /* Expands to GetCurrentThread/TestSuspend */
+_EVAL_DEF_INTRINSICS_FUNC(CheckSuspend,
+                          art_portable_check_suspend,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG0())
+
+// void art_portable_mark_gc_card(Object* new_value, Object* object)
+_EVAL_DEF_INTRINSICS_FUNC(MarkGCCard,
+                          art_portable_mark_gc_card,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kJavaObjectTy, kJavaObjectTy))
+
+//----------------------------------------------------------------------------
+// Exception
+//----------------------------------------------------------------------------
+
+// Should not expand - introduces the catch targets for a potentially
+// throwing instruction.  The result is a switch key and this
+// instruction will be followed by a switch statement.  The catch
+// targets will be enumerated as cases of the switch, with the fallthrough
+// designating the block containing the potentially throwing instruction.
+// bool art_portable_catch_targets(int dex_pc)
+_EVAL_DEF_INTRINSICS_FUNC(CatchTargets,
+                          art_portable_catch_targets,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+// void art_portable_throw_exception(JavaObject* exception)
+_EVAL_DEF_INTRINSICS_FUNC(ThrowException,
+                          art_portable_throw_exception,
+                          kAttrDoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG1(kJavaObjectTy))
+
+// void art_portable_hl_throw_exception(JavaObject* exception)
+_EVAL_DEF_INTRINSICS_FUNC(HLThrowException,
+                          art_portable_hl_throw_exception,
+                          kAttrDoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG1(kJavaObjectTy))
+
+// JavaObject* art_portable_get_current_exception()
+_EVAL_DEF_INTRINSICS_FUNC(GetException,
+                          art_portable_get_current_exception,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG0())
+
+// bool art_portable_is_exception_pending()
+_EVAL_DEF_INTRINSICS_FUNC(IsExceptionPending,
+                          art_portable_is_exception_pending,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt1Ty,
+                          _EXPAND_ARG0())
+
+// int art_portable_find_catch_block(Method* method, int try_item_offset)
+_EVAL_DEF_INTRINSICS_FUNC(FindCatchBlock,
+                          art_portable_find_catch_block,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kJavaMethodTy, kInt32ConstantTy))
+
+// void art_portable_throw_div_zero()
+_EVAL_DEF_INTRINSICS_FUNC(ThrowDivZeroException,
+                          art_portable_throw_div_zero,
+                          kAttrDoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG0())
+
+// void art_portable_throw_null_pointer_exception(uint32_t dex_pc)
+_EVAL_DEF_INTRINSICS_FUNC(ThrowNullPointerException,
+                          art_portable_throw_null_pointer_exception,
+                          kAttrDoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+// void art_portable_throw_array_bounds(int index, int array_len)
+_EVAL_DEF_INTRINSICS_FUNC(ThrowIndexOutOfBounds,
+                          art_portable_throw_array_bounds,
+                          kAttrDoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kInt32Ty))
+
+//----------------------------------------------------------------------------
+// ConstString
+//----------------------------------------------------------------------------
+
+// JavaObject* art_portable_const_string(uint32_t string_idx)
+_EVAL_DEF_INTRINSICS_FUNC(ConstString,
+                          art_portable_const_string,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+// JavaObject* art_portable_load_string_from_dex_cache(Method* method, uint32_t string_idx)
+_EVAL_DEF_INTRINSICS_FUNC(LoadStringFromDexCache,
+                          art_portable_load_string_from_dex_cache,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+// JavaObject* art_portable_resolve_string(Method* method, uint32_t string_idx)
+_EVAL_DEF_INTRINSICS_FUNC(ResolveString,
+                          art_portable_resolve_string,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG2(kJavaMethodTy, kInt32ConstantTy))
+
+//----------------------------------------------------------------------------
+// ConstClass
+//----------------------------------------------------------------------------
+
+// JavaObject* art_portable_const_class(uint32_t type_idx)
+_EVAL_DEF_INTRINSICS_FUNC(ConstClass,
+                          art_portable_const_class,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+// JavaObject* art_portable_initialize_type_and_verify_access(uint32_t type_idx,
+//                                                        Method* referrer,
+//                                                        Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(InitializeTypeAndVerifyAccess,
+                          art_portable_initialize_type_and_verify_access,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaThreadTy))
+
+// JavaObject* art_portable_load_type_from_dex_cache(uint32_t type_idx)
+_EVAL_DEF_INTRINSICS_FUNC(LoadTypeFromDexCache,
+                          art_portable_load_type_from_dex_cache,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+// JavaObject* art_portable_initialize_type(uint32_t type_idx,
+//                                      Method* referrer,
+//                                      Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(InitializeType,
+                          art_portable_initialize_type,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaThreadTy))
+
+//----------------------------------------------------------------------------
+// Lock
+//----------------------------------------------------------------------------
+
+// void art_portable_lock_object(JavaObject* obj, Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(LockObject,
+                          art_portable_lock_object,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kJavaObjectTy, kJavaThreadTy))
+
+// void art_portable_unlock_object(JavaObject* obj, Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(UnlockObject,
+                          art_portable_unlock_object,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG2(kJavaObjectTy, kJavaThreadTy))
+
+//----------------------------------------------------------------------------
+// Cast
+//----------------------------------------------------------------------------
+
+// void art_portable_check_cast(JavaObject* dest_type, JavaObject* src_type)
+_EVAL_DEF_INTRINSICS_FUNC(CheckCast,
+                          art_portable_check_cast,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG2(kJavaObjectTy, kJavaObjectTy))
+
+// void art_portable_hl_check_cast(uint32_t type_idx, JavaObject* obj)
+_EVAL_DEF_INTRINSICS_FUNC(HLCheckCast,
+                          art_portable_hl_check_cast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaObjectTy))
+
+// int art_portable_is_assignable(JavaObject* dest_type, JavaObject* src_type)
+_EVAL_DEF_INTRINSICS_FUNC(IsAssignable,
+                          art_portable_is_assignable,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kJavaObjectTy, kJavaObjectTy))
+
+//----------------------------------------------------------------------------
+// Allocation
+//----------------------------------------------------------------------------
+
+// JavaObject* art_portable_alloc_object(uint32_t type_idx,
+//                                   Method* referrer,
+//                                   Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(AllocObject,
+                          art_portable_alloc_object,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaThreadTy))
+
+// JavaObject* art_portable_alloc_object_with_access_check(uint32_t type_idx,
+//                                                     Method* referrer,
+//                                                     Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(AllocObjectWithAccessCheck,
+                          art_portable_alloc_object_with_access_check,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaThreadTy))
+
+//----------------------------------------------------------------------------
+// Instance
+//----------------------------------------------------------------------------
+
+// JavaObject* art_portable_new_instance(uint32_t type_idx)
+_EVAL_DEF_INTRINSICS_FUNC(NewInstance,
+                          art_portable_new_instance,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// bool art_portable_instance_of(uint32_t type_idx, JavaObject* ref)
+_EVAL_DEF_INTRINSICS_FUNC(InstanceOf,
+                          art_portable_instance_of,
+                          kAttrNone,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kInt32Ty, kJavaObjectTy))
+
+//----------------------------------------------------------------------------
+// Array
+//----------------------------------------------------------------------------
+
+// JavaObject* art_portable_new_array(uint32_t type_idx, uint32_t array_size)
+_EVAL_DEF_INTRINSICS_FUNC(NewArray,
+                          art_portable_new_array,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG2(kInt32ConstantTy, kInt32Ty))
+
+// uint32_t art_portable_opt_array_length(int32_t opt_flags, JavaObject* array)
+_EVAL_DEF_INTRINSICS_FUNC(OptArrayLength,
+                          art_portable_opt_array_length,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kInt32Ty, kJavaObjectTy))
+
+// uint32_t art_portable_array_length(JavaObject* array)
+_EVAL_DEF_INTRINSICS_FUNC(ArrayLength,
+                          art_portable_array_length,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kJavaObjectTy))
+
+// JavaObject* art_portable_alloc_array(uint32_t type_idx,
+//                                  Method* referrer,
+//                                  uint32_t length,
+//                                  Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(AllocArray,
+                          art_portable_alloc_array,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kInt32Ty, kJavaThreadTy))
+
+// JavaObject* art_portable_alloc_array_with_access_check(uint32_t type_idx,
+//                                                    Method* referrer,
+//                                                    uint32_t length,
+//                                                    Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(AllocArrayWithAccessCheck,
+                          art_portable_alloc_array_with_access_check,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kInt32Ty, kJavaThreadTy))
+
+// JavaObject* art_portable_check_and_alloc_array(uint32_t type_idx,
+//                                            Method* referrer,
+//                                            uint32_t length,
+//                                            Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(CheckAndAllocArray,
+                          art_portable_check_and_alloc_array,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kInt32ConstantTy, kJavaThreadTy))
+
+// JavaObject* art_portable_check_and_alloc_array_with_access_check(uint32_t type_idx,
+//                                                              Method* referrer,
+//                                                              uint32_t length,
+//                                                              Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(CheckAndAllocArrayWithAccessCheck,
+                          art_portable_check_and_alloc_array_with_access_check,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kInt32ConstantTy, kJavaThreadTy))
+
+// art_portable_aget_* and art_portable_aput_* never generate exception since the
+// necessary checking on arguments (e.g., array and index) has already done
+// before invocation of these intrinsics.
+//
+// [type] void art_portable_aget_[type](JavaObject* array, uint32_t index)
+_EVAL_DEF_INTRINSICS_FUNC(ArrayGet,
+                          art_portable_aget,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt32Ty, kArray),
+                          _EXPAND_ARG2(kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayGetWide,
+                          art_portable_aget_wide,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt64Ty, kArray),
+                          _EXPAND_ARG2(kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayGetObject,
+                          art_portable_aget_object,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kJavaObjectTy, kArray),
+                          _EXPAND_ARG2(kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayGetBoolean,
+                          art_portable_aget_boolean,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt1Ty, kArray),
+                          _EXPAND_ARG2(kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayGetByte,
+                          art_portable_aget_byte,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt8Ty, kArray),
+                          _EXPAND_ARG2(kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayGetChar,
+                          art_portable_aget_char,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt16Ty, kArray),
+                          _EXPAND_ARG2(kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayGetShort,
+                          art_portable_aget_short,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt16Ty, kArray),
+                          _EXPAND_ARG2(kJavaObjectTy, kInt32Ty))
+
+// void art_portable_aput_[type]([type] value, JavaObject* array, uint32_t index)
+_EVAL_DEF_INTRINSICS_FUNC(ArrayPut,
+                          art_portable_aput,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG3(_JTYPE(kInt32Ty, kArray), kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayPutWide,
+                          art_portable_aput_wide,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG3(_JTYPE(kInt64Ty, kArray), kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayPutObject,
+                          art_portable_aput_object,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG3(_JTYPE(kJavaObjectTy, kArray), kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayPutBoolean,
+                          art_portable_aput_boolean,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG3(_JTYPE(kInt1Ty, kArray), kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayPutByte,
+                          art_portable_aput_byte,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG3(_JTYPE(kInt8Ty, kArray), kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayPutChar,
+                          art_portable_aput_char,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG3(_JTYPE(kInt16Ty, kArray), kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(ArrayPutShort,
+                          art_portable_aput_short,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG3(_JTYPE(kInt16Ty, kArray), kJavaObjectTy, kInt32Ty))
+
+// void art_portable_check_put_array_element(JavaObject* value, JavaObject* array)
+_EVAL_DEF_INTRINSICS_FUNC(CheckPutArrayElement,
+                          art_portable_check_put_array_element,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG2(kJavaObjectTy, kJavaObjectTy))
+
+// void art_portable_filled_new_array(Array* array,
+//                                uint32_t elem_jty, ...)
+_EVAL_DEF_INTRINSICS_FUNC(FilledNewArray,
+                          art_portable_filled_new_array,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG3(kJavaObjectTy, kInt32ConstantTy, kVarArgTy))
+
+// void art_portable_fill_array_data(Method* referrer,
+//                               uint32_t dex_pc,
+//                               Array* array,
+//                               uint32_t payload_offset)
+_EVAL_DEF_INTRINSICS_FUNC(FillArrayData,
+                          art_portable_fill_array_data,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG4(kJavaMethodTy, kInt32ConstantTy, kJavaObjectTy, kInt32ConstantTy))
+
+// void art_portable_hl_fill_array_data(int32_t offset, JavaObject* array)
+_EVAL_DEF_INTRINSICS_FUNC(HLFillArrayData,
+                          art_portable_hl_fill_array_data,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaObjectTy))
+
+//----------------------------------------------------------------------------
+// Instance Field
+//----------------------------------------------------------------------------
+
+// [type] art_portable_iget_[type](uint32_t field_idx,
+//                             Method* referrer,
+//                             JavaObject* obj)
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGet,
+                          art_portable_iget,
+                          kAttrNone,
+                          _JTYPE(kInt32Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetWide,
+                          art_portable_iget_wide,
+                          kAttrNone,
+                          _JTYPE(kInt64Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetObject,
+                          art_portable_iget_object,
+                          kAttrNone,
+                          _JTYPE(kJavaObjectTy, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetBoolean,
+                          art_portable_iget_boolean,
+                          kAttrNone,
+                          _JTYPE(kInt1Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetByte,
+                          art_portable_iget_byte,
+                          kAttrNone,
+                          _JTYPE(kInt8Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetChar,
+                          art_portable_iget_char,
+                          kAttrNone,
+                          _JTYPE(kInt16Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetShort,
+                          art_portable_iget_short,
+                          kAttrNone,
+                          _JTYPE(kInt16Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy))
+
+// [type] art_portable_iget_[type].fast(int field_offset,
+//                                  bool is_volatile,
+//                                  JavaObject* obj)
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetFast,
+                          art_portable_iget.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt32Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetWideFast,
+                          art_portable_iget_wide.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt64Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetObjectFast,
+                          art_portable_iget_object.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kJavaObjectTy, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetBooleanFast,
+                          art_portable_iget_boolean.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt1Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetByteFast,
+                          art_portable_iget_byte.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt8Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetCharFast,
+                          art_portable_iget_char.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt16Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldGetShortFast,
+                          art_portable_iget_short.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt16Ty, kField),
+                          _EXPAND_ARG3(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy))
+
+// void art_portable_iput_[type](uint32_t field_idx,
+//                           Method* referrer,
+//                           JavaObject* obj,
+//                           [type] new_value)
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPut,
+                          art_portable_iput,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy, _JTYPE(kInt32Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutWide,
+                          art_portable_iput_wide,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy, _JTYPE(kInt64Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutObject,
+                          art_portable_iput_object,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy, _JTYPE(kJavaObjectTy, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutBoolean,
+                          art_portable_iput_boolean,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy, _JTYPE(kInt1Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutByte,
+                          art_portable_iput_byte,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy, _JTYPE(kInt8Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutChar,
+                          art_portable_iput_char,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy, _JTYPE(kInt16Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutShort,
+                          art_portable_iput_short,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaMethodTy, kJavaObjectTy, _JTYPE(kInt16Ty, kField)))
+
+// void art_portable_iput_[type].fast(int field_offset,
+//                                bool is_volatile,
+//                                JavaObject* obj,
+//                                [type] new_value)
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutFast,
+                          art_portable_iput.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy, _JTYPE(kInt32Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutWideFast,
+                          art_portable_iput_wide.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy, _JTYPE(kInt64Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutObjectFast,
+                          art_portable_iput_object.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy, _JTYPE(kJavaObjectTy, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutBooleanFast,
+                          art_portable_iput_boolean.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy, _JTYPE(kInt1Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutByteFast,
+                          art_portable_iput_byte.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy, _JTYPE(kInt8Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutCharFast,
+                          art_portable_iput_char.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy, _JTYPE(kInt16Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(InstanceFieldPutShortFast,
+                          art_portable_iput_short.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kInt1ConstantTy, kJavaObjectTy, _JTYPE(kInt16Ty, kField)))
+
+//----------------------------------------------------------------------------
+// Static Field
+//----------------------------------------------------------------------------
+
+// [type] art_portable_sget_[type](uint32_t field_idx, Method* referrer)
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGet,
+                          art_portable_sget,
+                          kAttrNone,
+                          _JTYPE(kInt32Ty, kField),
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaMethodTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetWide,
+                          art_portable_sget_wide,
+                          kAttrNone,
+                          _JTYPE(kInt64Ty, kField),
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaMethodTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetObject,
+                          art_portable_sget_object,
+                          kAttrNone,
+                          _JTYPE(kJavaObjectTy, kField),
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaMethodTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetBoolean,
+                          art_portable_sget_boolean,
+                          kAttrNone,
+                          _JTYPE(kInt1Ty, kField),
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaMethodTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetByte,
+                          art_portable_sget_byte,
+                          kAttrNone,
+                          _JTYPE(kInt8Ty, kField),
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaMethodTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetChar,
+                          art_portable_sget_char,
+                          kAttrNone,
+                          _JTYPE(kInt16Ty, kField),
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaMethodTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetShort,
+                          art_portable_sget_short,
+                          kAttrNone,
+                          _JTYPE(kInt16Ty, kField),
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaMethodTy))
+
+// [type] art_portable_sget_[type].fast(JavaObject* ssb,
+//                                  int field_offset,
+//                                  bool is_volatile)
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetFast,
+                          art_portable_sget.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt32Ty, kField),
+                          _EXPAND_ARG3(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetWideFast,
+                          art_portable_sget_wide.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt64Ty, kField),
+                          _EXPAND_ARG3(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetObjectFast,
+                          art_portable_sget_object.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kJavaObjectTy, kField),
+                          _EXPAND_ARG3(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetBooleanFast,
+                          art_portable_sget_boolean.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt1Ty, kField),
+                          _EXPAND_ARG3(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetByteFast,
+                          art_portable_sget_byte.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt8Ty, kField),
+                          _EXPAND_ARG3(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetCharFast,
+                          art_portable_sget_char.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt16Ty, kField),
+                          _EXPAND_ARG3(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldGetShortFast,
+                          art_portable_sget_short.fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          _JTYPE(kInt16Ty, kField),
+                          _EXPAND_ARG3(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy))
+
+// void art_portable_sput_[type](uint32_t field_idx,
+//                           Method* referrer,
+//                           [type] new_value)
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPut,
+                          art_portable_sput,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, _JTYPE(kInt32Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutWide,
+                          art_portable_sput_wide,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, _JTYPE(kInt64Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutObject,
+                          art_portable_sput_object,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, _JTYPE(kJavaObjectTy, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutBoolean,
+                          art_portable_sput_boolean,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, _JTYPE(kInt1Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutByte,
+                          art_portable_sput_byte,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, _JTYPE(kInt8Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutChar,
+                          art_portable_sput_char,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, _JTYPE(kInt16Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutShort,
+                          art_portable_sput_short,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, _JTYPE(kInt16Ty, kField)))
+
+// void art_portable_sput_[type].fast(JavaObject* ssb,
+//                                int field_offset,
+//                                bool is_volatile,
+//                                [type] new_value)
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutFast,
+                          art_portable_sput.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy, _JTYPE(kInt32Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutWideFast,
+                          art_portable_sput_wide.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy, _JTYPE(kInt64Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutObjectFast,
+                          art_portable_sput_object.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy, _JTYPE(kJavaObjectTy, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutBooleanFast,
+                          art_portable_sput_boolean.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy, _JTYPE(kInt1Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutByteFast,
+                          art_portable_sput_byte.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy, _JTYPE(kInt8Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutCharFast,
+                          art_portable_sput_char.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy, _JTYPE(kInt16Ty, kField)))
+
+_EVAL_DEF_INTRINSICS_FUNC(StaticFieldPutShortFast,
+                          art_portable_sput_short.fast,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kJavaObjectTy, kInt32ConstantTy, kInt1ConstantTy, _JTYPE(kInt16Ty, kField)))
+
+// JavaObject* art_portable_load_declaring_class_ssb(Method* method)
+// Load the static storage base of the class that given method resides
+_EVAL_DEF_INTRINSICS_FUNC(LoadDeclaringClassSSB,
+                          art_portable_load_declaring_class_ssb,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kJavaMethodTy))
+
+// JavaObject* art_portable_load_class_ssb_from_dex_cache(uint32_t type_idx)
+_EVAL_DEF_INTRINSICS_FUNC(LoadClassSSBFromDexCache,
+                          art_portable_load_class_ssb_from_dex_cache,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+// JavaObject* art_portable_init_and_load_class_ssb(uint32_t type_idx,
+//                                              Method* referrer,
+//                                              Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(InitializeAndLoadClassSSB,
+                          art_portable_init_and_load_class_ssb,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG3(kInt32ConstantTy, kJavaMethodTy, kJavaThreadTy))
+
+//----------------------------------------------------------------------------
+// High-level Array get/put
+//
+// Similar to art_portable_aget/aput_xxx, but checks not yet performed.
+// OptFlags contain info describing whether frontend has determined that
+// null check and/or array bounds check may be skipped.
+//
+// [type] void art_portable_hl_aget_[type](int optFlags, JavaObject* array, uint32_t index)
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayGet,
+                          art_portable_hl_aget,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayGetFloat,
+                          art_portable_hl_aget_float,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kFloatTy,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayGetWide,
+                          art_portable_hl_aget_wide,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayGetDouble,
+                          art_portable_hl_aget_double,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kDoubleTy,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayGetObject,
+                          art_portable_hl_aget_object,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayGetBoolean,
+                          art_portable_hl_aget_boolean,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayGetByte,
+                          art_portable_hl_aget_byte,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayGetChar,
+                          art_portable_hl_aget_char,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayGetShort,
+                          art_portable_hl_aget_short,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+// void art_portable_aput_[type](int optFlags, [type] value, JavaObject* array, uint32_t index)
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayPut,
+                          art_portable_hl_aput,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayPutFloat,
+                          art_portable_hl_aput_float,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kFloatTy, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayPutWide,
+                          art_portable_hl_aput_wide,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt64Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayPutDouble,
+                          art_portable_hl_aput_double,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kDoubleTy, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayPutObject,
+                          art_portable_hl_aput_object,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kJavaObjectTy, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayPutBoolean,
+                          art_portable_hl_aput_boolean,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayPutByte,
+                          art_portable_hl_aput_byte,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayPutChar,
+                          art_portable_hl_aput_char,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLArrayPutShort,
+                          art_portable_hl_aput_short,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+//----------------------------------------------------------------------------
+// High-level Instance get/put
+//
+// Similar to art_portable_iget/iput_xxx, but checks not yet performed.
+// OptFlags contain info describing whether frontend has determined that
+// null check may be skipped.
+//
+// [type] void art_portable_hl_iget_[type](int optFlags, JavaObject* obj, uint32_t field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLIGet,
+                          art_portable_hl_iget,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIGetFloat,
+                          art_portable_hl_iget_float,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kFloatTy,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIGetWide,
+                          art_portable_hl_iget_wide,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIGetDouble,
+                          art_portable_hl_iget_double,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kDoubleTy,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIGetObject,
+                          art_portable_hl_iget_object,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIGetBoolean,
+                          art_portable_hl_iget_boolean,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIGetByte,
+                          art_portable_hl_iget_byte,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIGetChar,
+                          art_portable_hl_iget_char,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIGetShort,
+                          art_portable_hl_iget_short,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG3(kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+// void art_portable_iput_[type](int optFlags, [type] value, JavaObject* obj, uint32_t field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLIPut,
+                          art_portable_hl_iput,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIPutFloat,
+                          art_portable_hl_iput_float,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kFloatTy, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIPutWide,
+                          art_portable_hl_iput_wide,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt64Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIPutDouble,
+                          art_portable_hl_iput_double,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kDoubleTy, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIPutObject,
+                          art_portable_hl_iput_object,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kJavaObjectTy, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIPutBoolean,
+                          art_portable_hl_iput_boolean,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIPutByte,
+                          art_portable_hl_iput_byte,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIPutChar,
+                          art_portable_hl_iput_char,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(HLIPutShort,
+                          art_portable_hl_iput_short,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG4(kInt32Ty, kInt32Ty, kJavaObjectTy, kInt32Ty))
+
+//----------------------------------------------------------------------------
+// High-level Invokes (fast-path determination not yet performed)
+//
+// NOTE: We expect these intrinsics to be temporary.  Once calling conventions are
+//       fully merged, the unified front end will lower down to the
+//       InvokeRetxxx() intrinsics in the next section and these will be
+//       removed.
+//
+// arg0: InvokeType [ignored if FilledNewArray]
+// arg1: method_idx [ignored if FilledNewArray]
+// arg2: optimization_flags (primary to note whether null checking is needed)
+// [arg3..argN]: actual arguments
+//----------------------------------------------------------------------------
+// INVOKE method returns void
+_EVAL_DEF_INTRINSICS_FUNC(HLInvokeVoid,
+                          art_portable_hl_invoke.void,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG1(kVarArgTy))
+
+// INVOKE method returns object
+_EVAL_DEF_INTRINSICS_FUNC(HLInvokeObj,
+                          art_portable_hl_invoke.obj,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kVarArgTy))
+
+// INVOKE method returns int
+_EVAL_DEF_INTRINSICS_FUNC(HLInvokeInt,
+                          art_portable_hl_invoke.i32,
+                          kAttrNone,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kVarArgTy))
+
+// INVOKE method returns float
+_EVAL_DEF_INTRINSICS_FUNC(HLInvokeFloat,
+                          art_portable_hl_invoke.f32,
+                          kAttrNone,
+                          kFloatTy,
+                          _EXPAND_ARG1(kVarArgTy))
+
+// INVOKE method returns long
+_EVAL_DEF_INTRINSICS_FUNC(HLInvokeLong,
+                          art_portable_hl_invoke.i64,
+                          kAttrNone,
+                          kInt64Ty,
+                          _EXPAND_ARG1(kVarArgTy))
+
+// INVOKE method returns double
+_EVAL_DEF_INTRINSICS_FUNC(HLInvokeDouble,
+                          art_portable_hl_invoke.f64,
+                          kAttrNone,
+                          kDoubleTy,
+                          _EXPAND_ARG1(kVarArgTy))
+
+// FILLED_NEW_ARRAY returns object
+_EVAL_DEF_INTRINSICS_FUNC(HLFilledNewArray,
+                          art_portable_hl_filled_new_array,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kVarArgTy))
+
+//----------------------------------------------------------------------------
+// Invoke
+//----------------------------------------------------------------------------
+
+// Method* art_portable_find_static_method_with_access_check(uint32_t method_idx,
+//                                                       JavaObject* this,
+//                                                       Method* referrer,
+//                                                       Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(FindStaticMethodWithAccessCheck,
+                          art_portable_find_static_method_with_access_check,
+                          kAttrNone,
+                          kJavaMethodTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaObjectTy, kJavaMethodTy, kJavaThreadTy))
+
+// Method* art_portable_find_direct_method_with_access_check(uint32_t method_idx,
+//                                                       JavaObject* this,
+//                                                       Method* referrer,
+//                                                       Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(FindDirectMethodWithAccessCheck,
+                          art_portable_find_direct_method_with_access_check,
+                          kAttrNone,
+                          kJavaMethodTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaObjectTy, kJavaMethodTy, kJavaThreadTy))
+
+// Method* art_portable_find_virtual_method_with_access_check(uint32_t method_idx,
+//                                                        JavaObject* this,
+//                                                        Method* referrer,
+//                                                        Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(FindVirtualMethodWithAccessCheck,
+                          art_portable_find_virtual_method_with_access_check,
+                          kAttrNone,
+                          kJavaMethodTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaObjectTy, kJavaMethodTy, kJavaThreadTy))
+
+// Method* art_portable_find_super_method_with_access_check(uint32_t method_idx,
+//                                                      JavaObject* this,
+//                                                      Method* referrer,
+//                                                      Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(FindSuperMethodWithAccessCheck,
+                          art_portable_find_super_method_with_access_check,
+                          kAttrNone,
+                          kJavaMethodTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaObjectTy, kJavaMethodTy, kJavaThreadTy))
+
+// Method* art_portable_find_interface_method_with_access_check(uint32_t method_idx,
+//                                                          JavaObject* this,
+//                                                          Method* referrer,
+//                                                          Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(FindInterfaceMethodWithAccessCheck,
+                          art_portable_find_interface_method_with_access_check,
+                          kAttrNone,
+                          kJavaMethodTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaObjectTy, kJavaMethodTy, kJavaThreadTy))
+
+// Method* art_portable_get_sd_callee_method_obj_addr(uint32_t method_idx)
+_EVAL_DEF_INTRINSICS_FUNC(GetSDCalleeMethodObjAddrFast,
+                          art_portable_get_sd_callee_method_obj_addr_fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaMethodTy,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+// Method* art_portable_get_virtual_callee_method_obj_addr(uint32_t vtable_idx,
+//                                                     JavaObject* this)
+_EVAL_DEF_INTRINSICS_FUNC(GetVirtualCalleeMethodObjAddrFast,
+                          art_portable_get_virtual_callee_method_obj_addr_fast,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaMethodTy,
+                          _EXPAND_ARG2(kInt32ConstantTy, kJavaObjectTy))
+
+// Method* art_portable_get_interface_callee_method_obj_addr(uint32_t method_idx,
+//                                                       JavaObject* this,
+//                                                       Method* referrer,
+//                                                       Thread* thread)
+_EVAL_DEF_INTRINSICS_FUNC(GetInterfaceCalleeMethodObjAddrFast,
+                          art_portable_get_interface_callee_method_obj_addr_fast,
+                          kAttrNone,
+                          kJavaMethodTy,
+                          _EXPAND_ARG4(kInt32ConstantTy, kJavaObjectTy, kJavaMethodTy, kJavaThreadTy))
+
+// [type] art_portable_invoke.[type](Method* callee, ...)
+// INVOKE method returns void
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetVoid,
+                          art_portable_invoke.void,
+                          kAttrNone,
+                          kVoidTy,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+// INVOKE method returns the value of type boolean
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetBoolean,
+                          art_portable_invoke.bool,
+                          kAttrNone,
+                          kInt1Ty,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+// INVOKE method returns the value of type byte
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetByte,
+                          art_portable_invoke.byte,
+                          kAttrNone,
+                          kInt8Ty,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+// INVOKE method returns the value of type char
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetChar,
+                          art_portable_invoke.char,
+                          kAttrNone,
+                          kInt16Ty,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+// INVOKE method returns the value of type short
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetShort,
+                          art_portable_invoke.short,
+                          kAttrNone,
+                          kInt16Ty,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+// INVOKE method returns the value of type int
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetInt,
+                          art_portable_invoke.int,
+                          kAttrNone,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+// INVOKE method returns the value of type long
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetLong,
+                          art_portable_invoke.long,
+                          kAttrNone,
+                          kInt64Ty,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+// INVOKE method returns the value of type float
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetFloat,
+                          art_portable_invoke.float,
+                          kAttrNone,
+                          kFloatTy,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+// INVOKE method returns the value of type double
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetDouble,
+                          art_portable_invoke.double,
+                          kAttrNone,
+                          kDoubleTy,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+// INVOKE method returns the value of type "object"
+_EVAL_DEF_INTRINSICS_FUNC(InvokeRetObject,
+                          art_portable_invoke.object,
+                          kAttrNone,
+                          kJavaObjectTy,
+                          _EXPAND_ARG2(kJavaMethodTy, kVarArgTy))
+
+//----------------------------------------------------------------------------
+// Math
+//----------------------------------------------------------------------------
+
+// int art_portable_{div,rem}_int(int a, int b)
+_EVAL_DEF_INTRINSICS_FUNC(DivInt,
+                          art_portable_div_int,
+                          kAttrReadNone | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kInt32Ty, kInt32Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(RemInt,
+                          art_portable_rem_int,
+                          kAttrReadNone | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kInt32Ty, kInt32Ty))
+
+// long art_portable_{div,rem}_long(long a, long b)
+_EVAL_DEF_INTRINSICS_FUNC(DivLong,
+                          art_portable_div_long,
+                          kAttrReadNone | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG2(kInt64Ty, kInt64Ty))
+
+_EVAL_DEF_INTRINSICS_FUNC(RemLong,
+                          art_portable_rem_long,
+                          kAttrReadNone | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG2(kInt64Ty, kInt64Ty))
+
+// int64_t art_portable_d2l(double f)
+_EVAL_DEF_INTRINSICS_FUNC(D2L,
+                          art_portable_d2l,
+                          kAttrReadNone | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG1(kDoubleTy))
+
+// int32_t art_portable_d2l(double f)
+_EVAL_DEF_INTRINSICS_FUNC(D2I,
+                          art_portable_d2i,
+                          kAttrReadNone | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kDoubleTy))
+
+// int64_t art_portable_f2l(float f)
+_EVAL_DEF_INTRINSICS_FUNC(F2L,
+                          art_portable_f2l,
+                          kAttrReadNone | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG1(kFloatTy))
+
+// int32_t art_portable_f2i(float f)
+_EVAL_DEF_INTRINSICS_FUNC(F2I,
+                          art_portable_f2i,
+                          kAttrReadNone | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kFloatTy))
+
+//----------------------------------------------------------------------------
+// sput intrinsics to assist MIR to Greenland_ir conversion.
+// "HL" versions - will be deprecated when fast/slow path handling done
+// in the common frontend.
+//----------------------------------------------------------------------------
+
+// void sput_hl(int field_idx, int val)
+_EVAL_DEF_INTRINSICS_FUNC(HLSput,
+                          art_portable_hl_sput,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kInt32Ty))
+
+// void sput_hl_object(int field_idx, object* val)
+_EVAL_DEF_INTRINSICS_FUNC(HLSputObject,
+                          art_portable_hl_sput_object,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kJavaObjectTy))
+
+// void sput_hl_boolean(int field_idx, kInt1Ty)
+_EVAL_DEF_INTRINSICS_FUNC(HLSputBoolean,
+                          art_portable_hl_sput_boolean,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kInt32Ty))
+
+// void sput_hl_byte(int field_idx, int val)
+_EVAL_DEF_INTRINSICS_FUNC(HLSputByte,
+                          art_portable_hl_sput_byte,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kInt32Ty))
+
+// void sput_hl_char(int field_idx, kInt16Ty val)
+_EVAL_DEF_INTRINSICS_FUNC(HLSputChar,
+                          art_portable_hl_sput_char,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kInt32Ty))
+
+// void sput_hl_short(int field_idx, int val)
+_EVAL_DEF_INTRINSICS_FUNC(HLSputShort,
+                          art_portable_hl_sput_short,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kInt32Ty))
+
+// void sput_hl_wide(int field_idx, long val)
+_EVAL_DEF_INTRINSICS_FUNC(HLSputWide,
+                          art_portable_hl_sput_wide,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kInt64Ty))
+
+// void sput_hl_double(int field_idx, double val)
+_EVAL_DEF_INTRINSICS_FUNC(HLSputDouble,
+                          art_portable_hl_sput_double,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kDoubleTy))
+
+// void sput_hl_float(int field_idx, float val)
+_EVAL_DEF_INTRINSICS_FUNC(HLSputFloat,
+                          art_portable_hl_sput_float,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kFloatTy))
+
+//----------------------------------------------------------------------------
+// sget intrinsics to assist MIR to Greenland_ir conversion.
+// "HL" versions - will be deprecated when fast/slow path handling done
+// in the common frontend.
+//----------------------------------------------------------------------------
+
+// int sget_hl(int field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLSget,
+                          art_portable_hl_sget,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// object* sget_hl_object(int field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLSgetObject,
+                          art_portable_hl_sget_object,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// boolean sget_hl_boolean(int field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLSgetBoolean,
+                          art_portable_hl_sget_boolean,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// byte sget_hl_byte(int field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLSgetByte,
+                          art_portable_hl_sget_byte,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// char sget_hl_char(int field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLSgetChar,
+                          art_portable_hl_sget_char,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// char sget_hl_short(int field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLSgetShort,
+                          art_portable_hl_sget_short,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// char sget_hl_wide(int field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLSgetWide,
+                          art_portable_hl_sget_wide,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// char sget_hl_double(int field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLSgetDouble,
+                          art_portable_hl_sget_double,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kDoubleTy,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// char sget_hl_float(int field_idx)
+_EVAL_DEF_INTRINSICS_FUNC(HLSgetFloat,
+                          art_portable_hl_sget_float,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kFloatTy,
+                          _EXPAND_ARG1(kInt32Ty))
+//----------------------------------------------------------------------------
+// Monitor enter/exit
+//----------------------------------------------------------------------------
+// uint32_t art_portable_monitor_enter(int optFlags, JavaObject* obj)
+_EVAL_DEF_INTRINSICS_FUNC(MonitorEnter,
+                          art_portable_monitor_enter,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kJavaObjectTy))
+
+// uint32_t art_portable_monitor_exit(int optFlags, JavaObject* obj)
+_EVAL_DEF_INTRINSICS_FUNC(MonitorExit,
+                          art_portable_monitor_exit,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32Ty, kJavaObjectTy))
+
+//----------------------------------------------------------------------------
+// Shadow Frame
+//----------------------------------------------------------------------------
+
+// void art_portable_alloca_shadow_frame(int num_entry)
+_EVAL_DEF_INTRINSICS_FUNC(AllocaShadowFrame,
+                          art_portable_alloca_shadow_frame,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+// void art_portable_set_vreg(int entry_idx, ...)
+_EVAL_DEF_INTRINSICS_FUNC(SetVReg,
+                          art_portable_set_vreg,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG2(kInt32ConstantTy, kVarArgTy))
+
+// void art_portable_pop_shadow_frame()
+_EVAL_DEF_INTRINSICS_FUNC(PopShadowFrame,
+                          art_portable_pop_shadow_frame,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG0())
+
+// void art_portable_update_dex_pc(uint32_t dex_pc)
+_EVAL_DEF_INTRINSICS_FUNC(UpdateDexPC,
+                          art_portable_update_dex_pc,
+                          kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG1(kInt32ConstantTy))
+
+//----------------------------------------------------------------------------
+// FP Comparison
+//----------------------------------------------------------------------------
+// int cmpl_float(float, float)
+_EVAL_DEF_INTRINSICS_FUNC(CmplFloat,
+                          art_portable_cmpl_float,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kFloatTy, kFloatTy))
+
+// int cmpg_float(float, float)
+_EVAL_DEF_INTRINSICS_FUNC(CmpgFloat,
+                          art_portable_cmpg_float,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kFloatTy, kFloatTy))
+
+// int cmpl_double(double, double)
+_EVAL_DEF_INTRINSICS_FUNC(CmplDouble,
+                          art_portable_cmpl_double,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kDoubleTy, kDoubleTy))
+
+// int cmpg_double(double, double)
+_EVAL_DEF_INTRINSICS_FUNC(CmpgDouble,
+                          art_portable_cmpg_double,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kDoubleTy, kDoubleTy))
+
+//----------------------------------------------------------------------------
+// Long Comparison
+//----------------------------------------------------------------------------
+// int cmp_long(long, long)
+_EVAL_DEF_INTRINSICS_FUNC(CmpLong,
+                          art_portable_cmp_long,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kInt64Ty, kInt64Ty))
+
+//----------------------------------------------------------------------------
+// Const intrinsics to assist MIR to Greenland_ir conversion.  Should not materialize
+// For simplicity, all use integer input
+//----------------------------------------------------------------------------
+// int const_int(int)
+_EVAL_DEF_INTRINSICS_FUNC(ConstInt,
+                          art_portable_const_int,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// JavaObject* const_obj(int)
+_EVAL_DEF_INTRINSICS_FUNC(ConstObj,
+                          art_portable_const_obj,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// long const_long(long)
+_EVAL_DEF_INTRINSICS_FUNC(ConstLong,
+                          art_portable_const_long,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG1(kInt64Ty))
+
+// float const_float(int)
+_EVAL_DEF_INTRINSICS_FUNC(ConstFloat,
+                          art_portable_const_Float,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kFloatTy,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// double const_double(long)
+_EVAL_DEF_INTRINSICS_FUNC(ConstDouble,
+                          art_portable_const_Double,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kDoubleTy,
+                          _EXPAND_ARG1(kInt64Ty))
+
+
+//----------------------------------------------------------------------------
+// Copy intrinsics to assist MIR to Greenland_ir conversion.  Should not materialize
+//----------------------------------------------------------------------------
+
+// void method_info(void)
+_EVAL_DEF_INTRINSICS_FUNC(MethodInfo,
+                          art_portable_method_info,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG0())
+
+// int copy_int(int)
+_EVAL_DEF_INTRINSICS_FUNC(CopyInt,
+                          art_portable_copy_int,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// JavaObject* copy_obj(obj)
+_EVAL_DEF_INTRINSICS_FUNC(CopyObj,
+                          art_portable_copy_obj,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kJavaObjectTy,
+                          _EXPAND_ARG1(kJavaObjectTy))
+
+// long copy_long(long)
+_EVAL_DEF_INTRINSICS_FUNC(CopyLong,
+                          art_portable_copy_long,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG1(kInt64Ty))
+
+// float copy_float(float)
+_EVAL_DEF_INTRINSICS_FUNC(CopyFloat,
+                          art_portable_copy_Float,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kFloatTy,
+                          _EXPAND_ARG1(kFloatTy))
+
+// double copy_double(double)
+_EVAL_DEF_INTRINSICS_FUNC(CopyDouble,
+                          art_portable_copy_Double,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kDoubleTy,
+                          _EXPAND_ARG1(kDoubleTy))
+
+//----------------------------------------------------------------------------
+// Shift intrinsics.  Shift semantics for Dalvik are a bit different than
+// the llvm shift operators.  For 32-bit shifts, the shift count is constrained
+// to the range of 0..31, while for 64-bit shifts we limit to 0..63.
+// Further, the shift count for Long shifts in Dalvik is 32 bits, while
+// llvm requires a 64-bit shift count. For GBC, we represent shifts as an
+//  intrinsic to allow most efficient target-dependent lowering.
+//----------------------------------------------------------------------------
+// long shl_long(long,int)
+_EVAL_DEF_INTRINSICS_FUNC(SHLLong,
+                          art_portable_shl_long,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG2(kInt64Ty,kInt32Ty))
+// long shr_long(long,int)
+_EVAL_DEF_INTRINSICS_FUNC(SHRLong,
+                          art_portable_shr_long,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG2(kInt64Ty,kInt32Ty))
+// long ushr_long(long,int)
+_EVAL_DEF_INTRINSICS_FUNC(USHRLong,
+                          art_portable_ushl_long,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt64Ty,
+                          _EXPAND_ARG2(kInt64Ty,kInt32Ty))
+// int shl_int(int,int)
+_EVAL_DEF_INTRINSICS_FUNC(SHLInt,
+                          art_portable_shl_int,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kInt32Ty,kInt32Ty))
+// long shr_int(int,int)
+_EVAL_DEF_INTRINSICS_FUNC(SHRInt,
+                          art_portable_shr_int,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kInt32Ty,kInt32Ty))
+// int ushr_long(int,int)
+_EVAL_DEF_INTRINSICS_FUNC(USHRInt,
+                          art_portable_ushl_int,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG2(kInt32Ty,kInt32Ty))
+//----------------------------------------------------------------------------
+// Conversion instrinsics.  Note: these should eventually be removed.  We
+// can express these directly in bitcode, but by using intrinsics the
+// Quick compiler can be more efficient.  Some extra optimization infrastructure
+// will have to be developed to undo the bitcode verbosity when these are
+// done inline.
+//----------------------------------------------------------------------------
+// int int_to_byte(int)
+_EVAL_DEF_INTRINSICS_FUNC(IntToByte,
+                          art_portable_int_to_byte,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// int int_to_char(int)
+_EVAL_DEF_INTRINSICS_FUNC(IntToChar,
+                          art_portable_int_to_char,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+// int int_to_short(int)
+_EVAL_DEF_INTRINSICS_FUNC(IntToShort,
+                          art_portable_int_to_short,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kInt32Ty,
+                          _EXPAND_ARG1(kInt32Ty))
+
+//----------------------------------------------------------------------------
+// Memory barrier
+//----------------------------------------------------------------------------
+// void constructor_barrier()
+_EVAL_DEF_INTRINSICS_FUNC(ConstructorBarrier,
+                          art_portable_constructor_barrier,
+                          kAttrReadOnly | kAttrNoThrow,
+                          kVoidTy,
+                          _EXPAND_ARG0())
+
+// Clean up all internal used macros
+#undef _EXPAND_ARG0
+#undef _EXPAND_ARG1
+#undef _EXPAND_ARG2
+#undef _EXPAND_ARG3
+#undef _EXPAND_ARG4
+#undef _EXPAND_ARG5
+
+#undef _JTYPE_OF_kInt1Ty_UNDER_kArray
+#undef _JTYPE_OF_kInt8Ty_UNDER_kArray
+#undef _JTYPE_OF_kInt16Ty_UNDER_kArray
+#undef _JTYPE_OF_kInt32Ty_UNDER_kArray
+#undef _JTYPE_OF_kInt64Ty_UNDER_kArray
+#undef _JTYPE_OF_kJavaObjectTy_UNDER_kArray
+
+#undef _JTYPE_OF_kInt1Ty_UNDER_kField
+#undef _JTYPE_OF_kInt8Ty_UNDER_kField
+#undef _JTYPE_OF_kInt16Ty_UNDER_kField
+#undef _JTYPE_OF_kInt32Ty_UNDER_kField
+#undef _JTYPE_OF_kInt64Ty_UNDER_kField
+#undef _JTYPE_OF_kJavaObjectTy_UNDER_kField
+
+#undef DEF_INTRINSICS_FUNC

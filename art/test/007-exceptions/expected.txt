@@ -1,0 +1,9 @@
+Got an NPE: second throw
+java.lang.NullPointerException: second throw
+	at Main.catchAndRethrow(Main.java:39)
+	at Main.exceptions_007(Main.java:23)
+	at Main.main(Main.java:31)
+Caused by: java.lang.NullPointerException: first throw
+	at Main.throwNullPointerException(Main.java:46)
+	at Main.catchAndRethrow(Main.java:36)
+	... 2 more

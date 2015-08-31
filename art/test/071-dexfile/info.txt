@@ -1,0 +1,4 @@
+Exercise some Dalvik-specific DEX file features.  This is not expected to
+work on other VMs.
+
+NOTE: the test requires that /data/run-test/ exists and is writable and not mounted noexec.

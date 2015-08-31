@@ -1,0 +1,2 @@
+A forked and extended version of IntMath from 003-omnibus-opcodes.
+TODO: fold back into 003-omnibus-opcodes.

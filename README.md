@@ -1,7 +1,7 @@
 # DexHunter
 DexHunter aims at unpacking hardened dex file automatically.
 
-DexHunter is based on the source code of Android runtime. It is composed of modified ART and DVM runtime. You can use the modified runtime to replace the original content in Android source codes (Android 4.4.3).
+DexHunter is based on the source code of Android runtime. It is composed of modified ART and DVM runtime. You can use the modified runtime to replace the original content in Android source codes (Android 4.4.3). The modification is mainly in "art/runtime/class_linker.cc" (ART) and "dalvik/vm/native/dalvik_system_DexFile.cpp" (DVM).
 
 If you want to unpack an app, you need to push the "dexname" file to "/data/" in the mobile before starting the app. The first line in "dexname" is the feature string (referring to "slide.pptx"). The second line is the data path of the target app (e.g. "/data/data/com.test.test/"). The feature string may be changed along with the evolution of hardening services. You can observe the log using "logcat" to determine whether the unpacking procedure is finished. Once done, the generated "whole.dex" file is the wanted result.
 

@@ -1,0 +1,4 @@
+new Special()
+java.lang.NullPointerException: Attempt to invoke virtual method 'void Main$Blort.repaint()' on a null object reference
+	at Main$Special.callInner(Main.java:31)
+	at Main.main(Main.java:20)

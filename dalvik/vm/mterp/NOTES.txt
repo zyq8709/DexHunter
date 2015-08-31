@@ -1,0 +1,71 @@
+Interpreter Notes
+
+
+==== Thread suspension and GC points ====
+
+The interpreter is expected to use a safe-point mechanism to allow thread
+suspension for garbage collection and the debugger.  This typically
+means an explicit check of the thread-suspend flag on backward branches
+(including self-branches on certain instructions), exception throws,
+and method returns.  The interpreter must also be prepared to switch in
+and out of the "debug" interpreter at these points.
+
+There are other ways for a thread to be stopped when a GC happens, notably:
+
+ - object allocation (either while executing an instruction that performs
+   allocation, or indirectly by allocating an exception when something
+   goes wrong)
+ - transitions to native code or indefinite wait (e.g. monitor-enter)
+
+(A debugger can in theory cause the interpreter to advance one instruction
+at a time, but since that only happens in the "debug" interpreter it's not
+necessary for authors of platform-specific code to worry about it.)
+
+For the most part the implementation does not need to worry about these
+things, but they matter when considering the contents of Dalvik's virtual
+registers for "precise" garbage collection.  So, all opcode handlers must
+follow this rule:
+
+ * Do not modify the contents of a virtual register before executing
+   code that can pause the thread.
+
+This should be fairly hard to violate given the nature of essentially all
+instructions, which will compute a result and then finish by storing that
+result into the specified destination register.  Using a virtual register
+to hold a partial or temporary result is not allowed.  Virtual registers
+must not be modified if we abort the instruction with an exception.
+
+
+==== Method results and GC ====
+
+The return value from a method is held in local storage (on the native
+stack for the portable interpreter, and in glue->retval for asm).  It's not
+accessible to a GC.  In practice this isn't a problem, because if the
+following instruction is not a "move-result" then the result is ignored,
+and none of the move-result* instructions are GC points.
+
+(This is potentially an issue when debugging, since we can theoretically
+single-step by individual bytecodes, but in practice we always step by
+source lines and move-result is grouped with the method invoke.)
+
+This suggests a rule:
+
+ * Don't do anything that can cause a GC in the invoke-* handler after
+   a method returns successfully.
+
+Unsuccessful returns, such as a native method call that returns with an
+exception pending, are not interesting because the return value is ignored.
+
+If it's not possible to obey this rule, then we need to track the value
+used in a return-object instruction for a brief period.  The easiest way
+to accomplish this is to store it in the interpreted stack where the GC
+can find it, and use a live-precise GC to ignore the value.
+
+The "trackref" functions can also be used, but they add overhead to method
+calls returning objects, and ensuring that we stop tracking the reference
+when it's no longer needed can be awkward.
+
+Any solution must work correctly when returning into or returning from native
+code.  JNI handles returns from interp->native by adding the value to the
+local references table, but returns from native->interp are simply stored
+in the usual "retval".

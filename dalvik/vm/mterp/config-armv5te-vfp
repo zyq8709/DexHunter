@@ -1,0 +1,108 @@
+# Copyright (C) 2009 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Configuration for ARMv5TE targets with VFP support.
+#
+# This is just ARMv5TE with replacements for the handlers that can benefit
+# from floating-point instructions.  Essentially all float/double
+# operations except for "remainder" and conversions to/from 64-bit ints.
+#
+
+handler-style computed-goto
+handler-size 64
+
+# source for the instruction table stub
+asm-stub armv5te/stub.S
+
+# source for alternate entry stub
+asm-alt-stub armv5te/alt_stub.S
+
+# file header and basic definitions
+import c/header.cpp
+import armv5te/header.S
+
+# C pre-processor defines for stub C instructions
+import cstubs/stubdefs.cpp
+
+# highly-platform-specific defs
+import armv5te/platform.S
+
+# common defs for the C helpers; include this before the instruction handlers
+import c/opcommon.cpp
+
+# arch-specific entry point to interpreter
+import armv5te/entry.S
+
+# opcode list; argument to op-start is default directory
+op-start armv5te
+    op OP_ADD_DOUBLE arm-vfp
+    op OP_ADD_DOUBLE_2ADDR arm-vfp
+    op OP_ADD_FLOAT arm-vfp
+    op OP_ADD_FLOAT_2ADDR arm-vfp
+    op OP_CMPG_DOUBLE arm-vfp
+    op OP_CMPG_FLOAT arm-vfp
+    op OP_CMPL_DOUBLE arm-vfp
+    op OP_CMPL_FLOAT arm-vfp
+    op OP_DIV_DOUBLE arm-vfp
+    op OP_DIV_DOUBLE_2ADDR arm-vfp
+    op OP_DIV_FLOAT arm-vfp
+    op OP_DIV_FLOAT_2ADDR arm-vfp
+    op OP_DOUBLE_TO_FLOAT arm-vfp
+    op OP_DOUBLE_TO_INT arm-vfp
+    op OP_FLOAT_TO_DOUBLE arm-vfp
+    op OP_FLOAT_TO_INT arm-vfp
+    op OP_INT_TO_DOUBLE arm-vfp
+    op OP_INT_TO_FLOAT arm-vfp
+    op OP_MUL_DOUBLE arm-vfp
+    op OP_MUL_DOUBLE_2ADDR arm-vfp
+    op OP_MUL_FLOAT arm-vfp
+    op OP_MUL_FLOAT_2ADDR arm-vfp
+    op OP_SUB_DOUBLE arm-vfp
+    op OP_SUB_DOUBLE_2ADDR arm-vfp
+    op OP_SUB_FLOAT arm-vfp
+    op OP_SUB_FLOAT_2ADDR arm-vfp
+
+    # use trivial integer operation
+    #op OP_NEG_DOUBLE armv5te
+    #op OP_NEG_FLOAT armv5te
+
+    # use __aeabi_* functions
+    #op OP_DOUBLE_TO_LONG armv5te
+    #op OP_FLOAT_TO_LONG armv5te
+    #op OP_LONG_TO_DOUBLE armv5te
+    #op OP_LONG_TO_FLOAT armv5te
+
+    # no "remainder" op in vfp or libgcc.a; use libc function
+    #op OP_REM_DOUBLE armv5te
+    #op OP_REM_DOUBLE_2ADDR armv5te
+    #op OP_REM_FLOAT armv5te
+    #op OP_REM_FLOAT_2ADDR armv5te
+
+    # experiment, unrelated to vfp
+    #op OP_INT_TO_BYTE armv6
+    #op OP_INT_TO_CHAR armv6
+    #op OP_INT_TO_SHORT armv6
+op-end
+
+# "helper" code for C; include if you use any of the C stubs (this generates
+# object code, so it's normally excluded)
+##import c/gotoTargets.cpp
+
+# end of defs; include this when cstubs/stubdefs.cpp is included
+import cstubs/enddefs.cpp
+
+# common subroutines for asm
+import armv5te/footer.S
+import armv5te/debug.cpp

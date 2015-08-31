@@ -1,0 +1,1 @@
+Tests that we throw OOME if Thread.nativeCreate fails, rather than aborting.

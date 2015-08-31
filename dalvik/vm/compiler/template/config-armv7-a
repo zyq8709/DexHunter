@@ -1,0 +1,68 @@
+
+# Copyright (C) 2009 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Configuration for ARMv7-a architecture targets.
+#
+
+# file header and basic definitions
+#import c/header.c
+import armv5te/header.S
+
+# C pre-processor defines for stub C instructions
+#import cstubs/stubdefs.c
+
+# highly-platform-specific defs
+import armv5te-vfp/platform.S
+
+# common defs for the C helpers; include this before the instruction handlers
+#import c/opcommon.c
+
+# opcode list; argument to op-start is default directory
+op-start armv7-a
+    op TEMPLATE_CMP_LONG armv5te
+    op TEMPLATE_INVOKE_METHOD_CHAIN armv5te
+    op TEMPLATE_INVOKE_METHOD_NATIVE armv5te
+    op TEMPLATE_INVOKE_METHOD_NO_OPT armv5te
+    op TEMPLATE_INVOKE_METHOD_PREDICTED_CHAIN armv5te
+    op TEMPLATE_MUL_LONG armv5te
+    op TEMPLATE_RETURN armv5te
+    op TEMPLATE_SHL_LONG armv5te
+    op TEMPLATE_SHR_LONG armv5te
+    op TEMPLATE_USHR_LONG armv5te
+    op TEMPLATE_THROW_EXCEPTION_COMMON armv5te
+    op TEMPLATE_STRING_COMPARETO armv5te
+    op TEMPLATE_STRING_INDEXOF armv5te
+    op TEMPLATE_INTERPRET armv5te
+    op TEMPLATE_MONITOR_ENTER armv5te
+    op TEMPLATE_MONITOR_ENTER_DEBUG armv5te
+    op TEMPLATE_PERIODIC_PROFILING armv5te
+    op TEMPLATE_INVOKE_METHOD_CHAIN_PROF armv5te
+    op TEMPLATE_INVOKE_METHOD_PREDICTED_CHAIN_PROF armv5te
+    op TEMPLATE_INVOKE_METHOD_NATIVE_PROF armv5te
+    op TEMPLATE_INVOKE_METHOD_NO_OPT_PROF armv5te
+    op TEMPLATE_RETURN_PROF armv5te
+    op TEMPLATE_MEM_OP_DECODE armv5te-vfp
+op-end
+
+# "helper" code for C; include if you use any of the C stubs (this generates
+# object code, so it's normally excluded)
+##import c/gotoTargets.c
+
+# end of defs; include this when cstubs/stubdefs.c is included
+#import cstubs/enddefs.c
+
+# common subroutines for asm
+import armv5te/footer.S

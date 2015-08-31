@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# Copyright (C) 2007 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# opcode-gen <file>
+#
+# This script uses the file bytecodes.txt (in this directory) to
+# generate code inside the given <file>, based on the directives found
+# in that file. Refer to those files to understand what's being
+# generated. (Look for comments that say "BEGIN(name)" where "name" is
+# one of the "emission" directives defined in opcode-gen.awk in this
+# directory.)
+
+file="$1"
+tmpfile="/tmp/$$.txt"
+
+echo "processing `basename $1`" 1>&2
+
+if [ "x$1" = "x" ]; then
+    echo "must specify a file" 1>&2
+    exit 1
+fi
+
+# Set up prog to be the path of this script, including following symlinks,
+# and set up progdir to be the fully-qualified pathname of its directory.
+prog="$0"
+while [ -h "${prog}" ]; do
+    newProg=`/bin/ls -ld "${prog}"`
+    newProg=`expr "${newProg}" : ".* -> \(.*\)$"`
+    if expr "x${newProg}" : 'x/' >/dev/null; then
+        prog="${newProg}"
+    else
+        progdir=`dirname "${prog}"`
+        prog="${progdir}/${newProg}"
+    fi
+done
+oldwd=`pwd`
+progdir=`dirname "${prog}"`
+cd "${progdir}"
+progdir=`pwd`
+prog="${progdir}"/`basename "${prog}"`
+cd "${oldwd}"
+
+bytecodeFile="$progdir/bytecode.txt"
+
+awk -v "bytecodeFile=$bytecodeFile" -f "$progdir/opcode-gen.awk" \
+    "$file" > "$tmpfile"
+
+if [ "$?" = "0" ]; then
+    cp "$tmpfile" "$file"
+    rm "$tmpfile"
+else
+    echo "error running awk" 1>&2
+    exit 1
+fi

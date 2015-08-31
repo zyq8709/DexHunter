@@ -1,0 +1,10 @@
+This test relies on the correct behavior of instance-of to test check-cast behavior,
+as shown below:
+
+
+CCE throw| InstanceOf | Correct?
+---------+------------+----------
+      1  |     0      |    OK
+      1  |     1      |    BAD
+      0  |     0      |    BAD
+      0  |     1      |    OK

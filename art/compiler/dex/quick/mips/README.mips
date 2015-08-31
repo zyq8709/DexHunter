@@ -1,0 +1,57 @@
+               Notes on the Mips target (3/4/2012)
+               -----------------------------------
+
+Testing
+
+The initial implementation of Mips support in the compiler is untested on
+actual hardware, and as such should be expected to have many bugs.  However,
+the vast majority of code for Mips support is either shared with other
+tested targets, or was taken from the functional Mips JIT compiler.  The
+expectation is that when it is first tried out on actual hardware lots of
+small bugs will be flushed out, but it should not take long to get it
+solidly running.  The following areas are considered most likely to have
+problems that need to be addressed:
+
+    o Endianness.  Focus was on little-endian support, and if a big-endian
+      target is desired, you should pay particular attention to the
+      code generation for switch tables, fill array data, 64-bit
+      data handling and the register usage conventions.
+
+    o The memory model.  Verify that oatGenMemoryBarrier() generates the
+      appropriate flavor of sync.
+
+Register promotion
+
+The resource masks in the LIR structure are 64-bits wide, which is enough
+room to fully describe def/use info for Arm and x86 instructions.  However,
+the larger number of MIPS core and float registers render this too small.
+Currently, the workaround for this limitation is to avoid using floating
+point registers 16-31.  These are the callee-save registers, which therefore
+means that no floating point promotion is allowed.  Among the solution are:
+     o Expand the def/use mask (which, unfortunately, is a significant change)
+     o The Arm target uses 52 of the 64 bits, so we could support float
+       registers 16-27 without much effort.
+     o We could likely assign the 4 non-register bits (kDalvikReg, kLiteral,
+       kHeapRef & kMustNotAlias) to positions occuped by MIPS registers that
+       don't need def/use bits because they are never modified by code
+       subject to scheduling: r_K0, r_K1, r_SP, r_ZERO, r_S1 (rSELF).
+
+Branch delay slots
+
+Little to no attempt was made to fill branch delay slots.  Branch
+instructions in the encoding map are given a length of 8 bytes to include
+an implicit NOP.  It should not be too difficult to provide a slot-filling
+pass following successful assembly, but thought should be given to the
+design.  Branches are currently treated as scheduling barriers.  One
+simple solution would be to copy the instruction at branch targets to the
+slot and adjust the displacement.  However, given that code expansion is
+already a problem it would be preferable to use a more sophisticated
+scheduling solution.
+
+Code expansion
+
+Code expansion for the MIPS target is significantly higher than we see
+for Arm and x86.  It might make sense to replace the inline code generation
+for some of the more verbose Dalik byte codes with subroutine calls to
+shared helper functions.
+

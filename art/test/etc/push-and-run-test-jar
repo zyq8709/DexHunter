@@ -1,0 +1,140 @@
+#!/bin/sh
+#
+# Run the code in test.jar on the device. The jar should contain a top-level
+# class named Main to run.
+
+msg() {
+    if [ "$QUIET" = "n" ]; then
+        echo "$@"
+    fi
+}
+
+LIB="libartd.so"
+GDB="n"
+DEBUGGER="n"
+INTERPRETER="n"
+VERIFY="y"
+OPTIMIZE="y"
+ZYGOTE=""
+QUIET="n"
+DEV_MODE="n"
+INVOKE_WITH=""
+
+while true; do
+    if [ "x$1" = "x--quiet" ]; then
+        QUIET="y"
+        shift
+    elif [ "x$1" = "x-lib" ]; then
+        shift
+        LIB="$1"
+    elif [ "x$1" = "x-O" ]; then
+        LIB="libart.so"
+        shift
+    elif [ "x$1" = "x--debug" ]; then
+        DEBUGGER="y"
+        shift
+    elif [ "x$1" = "x--gdb" ]; then
+        GDB="y"
+        DEV_MODE="y"
+        shift
+    elif [ "x$1" = "x--zygote" ]; then
+        ZYGOTE="--zygote"
+        msg "Spawning from zygote"
+        shift
+    elif [ "x$1" = "x--dev" ]; then
+        DEV_MODE="y"
+        shift
+    elif [ "x$1" = "x--interpreter" ]; then
+        INTERPRETER="y"
+        shift
+    elif [ "x$1" = "x--invoke-with" ]; then
+        shift
+        if [ "x$INVOKE_WITH" = "x" ]; then
+            INVOKE_WITH="$1"
+        else
+            INVOKE_WITH="$INVOKE_WITH $1"
+        fi
+        shift
+    elif [ "x$1" = "x--no-verify" ]; then
+        VERIFY="n"
+        shift
+    elif [ "x$1" = "x--no-optimize" ]; then
+        OPTIMIZE="n"
+        shift
+    elif [ "x$1" = "x--" ]; then
+        shift
+        break
+    elif expr "x$1" : "x--" >/dev/null 2>&1; then
+        echo "unknown $0 option: $1" 1>&2
+        exit 1
+    else
+        break
+    fi
+done
+
+if [ "$ZYGOTE" = "" ]; then
+    if [ "$OPTIMIZE" = "y" ]; then
+        if [ "$VERIFY" = "y" ]; then
+            DEX_OPTIMIZE="-Xdexopt:verified"
+        else
+            DEX_OPTIMIZE="-Xdexopt:all"
+        fi
+        msg "Performing optimizations"
+    else
+        DEX_OPTIMIZE="-Xdexopt:none"
+        msg "Skipping optimizations"
+    fi
+
+    if [ "$VERIFY" = "y" ]; then
+        DEX_VERIFY=""
+        msg "Performing verification"
+    else
+        DEX_VERIFY="-Xverify:none"
+        msg "Skipping verification"
+    fi
+fi
+
+msg "------------------------------"
+
+if [ "$QUIET" = "n" ]; then
+  adb shell rm -r $DEX_LOCATION
+  adb shell mkdir -p $DEX_LOCATION
+  adb push $TEST_NAME.jar $DEX_LOCATION
+  adb push $TEST_NAME-ex.jar $DEX_LOCATION
+else
+  adb shell rm -r $DEX_LOCATION >/dev/null 2>&1
+  adb shell mkdir -p $DEX_LOCATION >/dev/null 2>&1
+  adb push $TEST_NAME.jar $DEX_LOCATION >/dev/null 2>&1
+  adb push $TEST_NAME-ex.jar $DEX_LOCATION >/dev/null 2>&1
+fi
+
+if [ "$DEBUGGER" = "y" ]; then
+  # Use this instead for ddms and connect by running 'ddms':
+  # DEBUGGER_OPTS="-agentlib:jdwp=transport=dt_android_adb,server=y,suspend=y"
+  # TODO: add a separate --ddms option?
+
+  PORT=12345
+  msg "Waiting for jdb to connect:"
+  msg "    adb forward tcp:$PORT tcp:$PORT"
+  msg "    jdb -attach localhost:$PORT"
+  DEBUGGER_OPTS="-agentlib:jdwp=transport=dt_socket,address=$PORT,server=y,suspend=y"
+fi
+
+if [ "$GDB" = "y" ]; then
+    gdb="gdbserver :5039"
+    gdbargs="--args $exe"
+fi
+
+if [ "$INTERPRETER" = "y" ]; then
+    INT_OPTS="-Xint"
+fi
+
+JNI_OPTS="-Xjnigreflimit:512 -Xcheck:jni"
+
+cmdline="cd $DEX_LOCATION && mkdir dalvik-cache && export ANDROID_DATA=$DEX_LOCATION && export DEX_LOCATION=$DEX_LOCATION && \
+    $INVOKE_WITH $gdb dalvikvm $gdbargs -XXlib:$LIB $ZYGOTE $JNI_OPTS $INT_OPTS $DEBUGGER_OPTS -Ximage:/data/art-test/core.art -cp $DEX_LOCATION/$TEST_NAME.jar Main"
+if [ "$DEV_MODE" = "y" ]; then
+  echo $cmdline "$@"
+fi
+
+adb shell $cmdline "$@"

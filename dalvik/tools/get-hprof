@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# Copyright (C) 2007 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Grab an hprof file using adb. If an argument is specified, grab
+# the so-named file. If no argument is specified, grab the last such file
+# as found by using "ls".
+
+FILE_BASE="$1"
+if [ "x$FILE_BASE" = "x" ]; then
+    # Note: substr() is to get rid of the final carriage return.
+    FILE_BASE=`adb shell ls -l '/data/misc/heap-dump*.hprof' | tail -1 | \
+	awk '{ printf("%s", substr($7, 1, length($7) - 1)); }'`
+    if [ "x$FILE_BASE" = "x" ]; then
+        echo "No file base defined."
+        exit 1
+    fi
+fi
+
+FILE_BASE=/data/misc/${FILE_BASE}
+OUT_FILE=heap-dump.hprof
+
+adb pull "$FILE_BASE" "$OUT_FILE"
+if [ $? -ne 0 ]; then
+    echo "Failed pulling $FILE_BASE."
+    exit 1
+fi
+echo "hat $OUT_FILE"
+exit 0

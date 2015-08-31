@@ -1,0 +1,3 @@
+Tests that the growth limit, used to impose the small and large Android
+conventions, can be cleared and the resulting heap is at least as large
+as the growth limited heap.

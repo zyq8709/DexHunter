@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# Copyright (C) 2009 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# This tool checks the integrity of the optimized dex files on a single
+# Android device connected to your computer.
+#
+# Brief HOW-TO:
+#
+# 1. Disconnect all but one device from USB.
+# 2. Set up a standard shell environment (envsetup.sh, lunch, etc.).
+# 3. Run "adb root" if necessary to ensure read permission on
+#    /data/dalvik-cache. If in doubt, run the command. Power users may
+#    also use "su" followed by "chmod 777 /data/dalvik-cache".
+# 4. Run this script, e.g. from the build root, "dalvik/tools/dexcheck".
+#
+# If all of the dex files are okay, you will just see a series of
+# lines written to your shell window naming each of the files. If
+# there is a problem, though, you will see something like this:
+#
+#     system@app@Maps.apk@classes.dex
+#     Failure in system@app@Maps.apk@classes.dex: ERROR: DEX parse failed
+#
+# When this happens, the log ("adb logcat") will generally have at
+# least a little more information about the dex level of the problem.
+# However, any error at all usually indicates some form of lower level
+# filesystem or filesystem cache corruption.
+#
+
+# Get the list of files.  Use "sed" to drop the trailing carriage return.
+files=`adb shell "cd /data/dalvik-cache; echo *" | sed -e s/.$//`
+if [ "$files" = "*" ]; then
+    echo 'ERROR: commands must run as root on device (try "adb root" first?)'
+    exit 1
+fi
+
+failure=0
+
+# Check each file in turn.  This is much faster with "dexdump -c", but that
+# flag was not available in 1.6 and earlier.
+#
+# The dexdump found in older builds does not stop on checksum failures and
+# will likely crash.
+for file in $files; do
+    echo $file
+    errout=`adb shell "dexdump /data/dalvik-cache/$file > dev/null"`
+    errcount=`echo $errout | wc -w` > /dev/null
+    if [ $errcount != "0" ]; then
+        echo "  Failure in $file: $errout"
+        failure=1
+    fi
+done
+
+exit $failure

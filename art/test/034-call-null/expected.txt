@@ -1,0 +1,2 @@
+java.lang.NullPointerException: Attempt to invoke direct method 'void Main.doStuff(int, int[][], java.lang.String, java.lang.String[][])' on a null object reference
+	at Main.main(Main.java:26)

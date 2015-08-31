@@ -1,0 +1,61 @@
+# Copyright (C) 2008 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Configuration for "desktop" targets.
+#
+
+handler-style jump-table
+
+# source for the instruction table stub
+asm-stub x86/stub.S
+
+# source for alternate entry stub
+asm-alt-stub x86/alt_stub.S
+
+# C file header and basic definitions
+import c/header.cpp
+import x86/header.S
+
+# C pre-processor defines for stub C instructions
+import cstubs/stubdefs.cpp
+
+# common defs for the C opcodes
+import c/opcommon.cpp
+
+# opcode list; argument to op-start is default directory
+op-start x86
+    # stub -- need native impl
+    op OP_EXECUTE_INLINE_RANGE c
+    op OP_IGET_WIDE_VOLATILE c
+    op OP_IPUT_WIDE_VOLATILE c
+    op OP_SGET_WIDE_VOLATILE c
+    op OP_SPUT_WIDE_VOLATILE c
+    op OP_RETURN_VOID_BARRIER c
+    op OP_INVOKE_OBJECT_INIT_RANGE c
+op-end
+
+# arch-specific entry point to interpreter
+import x86/entry.S
+
+# "helper" code for C; include if you use any of the C stubs (this generates
+# object code, so it's normally excluded)
+# (asm code is currently calling into dvmMterp_exceptionThrown)
+import c/gotoTargets.cpp
+
+# end of defs; include this when cstubs/stubdefs.cpp is included
+import cstubs/enddefs.cpp
+
+# common subroutines for asm
+import x86/footer.S

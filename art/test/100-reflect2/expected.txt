@@ -1,0 +1,77 @@
+true
+8
+x
+3.141592653589793
+3.14
+32
+81985529216486895
+16
+false
+7
+y
+2.7
+2.7
+31
+63
+15
+true
+6
+z
+1.3
+1.3
+30
+62
+14
+java.lang.IllegalArgumentException: Invalid primitive conversion from int to short
+	at java.lang.reflect.Field.set(Native Method)
+	at Main.testFieldReflection(Main.java:121)
+	at Main.main(Main.java:269)
+true (class java.lang.Boolean)
+6 (class java.lang.Byte)
+z (class java.lang.Character)
+1.3 (class java.lang.Double)
+1.3 (class java.lang.Float)
+30 (class java.lang.Integer)
+62 (class java.lang.Long)
+14 (class java.lang.Short)
+[public java.lang.String(), java.lang.String(int,int,char[]), public java.lang.String(java.lang.String), public java.lang.String(java.lang.StringBuffer), public java.lang.String(java.lang.StringBuilder), public java.lang.String(byte[]), public java.lang.String(byte[],int), public java.lang.String(byte[],int,int), public java.lang.String(byte[],int,int,int), public java.lang.String(byte[],int,int,java.lang.String) throws java.io.UnsupportedEncodingException, public java.lang.String(byte[],int,int,java.nio.charset.Charset), public java.lang.String(byte[],java.lang.String) throws java.io.UnsupportedEncodingException, public java.lang.String(byte[],java.nio.charset.Charset), public java.lang.String(char[]), public java.lang.String(char[],int,int), public java.lang.String(int[],int,int)]
+[private final char[] java.lang.String.value, private final int java.lang.String.count, private int java.lang.String.hashCode, private final int java.lang.String.offset, private static final char[] java.lang.String.ASCII, public static final java.util.Comparator java.lang.String.CASE_INSENSITIVE_ORDER, private static final long java.lang.String.serialVersionUID, private static final char java.lang.String.REPLACEMENT_CHAR]
+[void java.lang.String._getChars(int,int,char[],int), public char java.lang.String.charAt(int), public int java.lang.String.codePointAt(int), public int java.lang.String.codePointBefore(int), public int java.lang.String.codePointCount(int,int), public volatile int java.lang.String.compareTo(java.lang.Object), public native int java.lang.String.compareTo(java.lang.String), public int java.lang.String.compareToIgnoreCase(java.lang.String), public java.lang.String java.lang.String.concat(java.lang.String), public boolean java.lang.String.contains(java.lang.CharSequence), public boolean java.lang.String.contentEquals(java.lang.CharSequence), public boolean java.lang.String.contentEquals(java.lang.StringBuffer), public boolean java.lang.String.endsWith(java.lang.String), public boolean java.lang.String.equals(java.lang.Object), public boolean java.lang.String.equalsIgnoreCase(java.lang.String), public void java.lang.String.getBytes(int,int,byte[],int), public [B java.lang.String.getBytes(), public [B java.lang.String.getBytes(java.lang.String) throws java.io.UnsupportedEncodingException, public [B java.lang.String.getBytes(java.nio.charset.Charset), public void java.lang.String.getChars(int,int,char[],int), public int java.lang.String.hashCode(), public int java.lang.String.indexOf(int), public int java.lang.String.indexOf(int,int), public int java.lang.String.indexOf(java.lang.String), public int java.lang.String.indexOf(java.lang.String,int), public native java.lang.String java.lang.String.intern(), public boolean java.lang.String.isEmpty(), public int java.lang.String.lastIndexOf(int), public int java.lang.String.lastIndexOf(int,int), public int java.lang.String.lastIndexOf(java.lang.String), public int java.lang.String.lastIndexOf(java.lang.String,int), public int java.lang.String.length(), public boolean java.lang.String.matches(java.lang.String), public int java.lang.String.offsetByCodePoints(int,int), public boolean java.lang.String.regionMatches(int,java.lang.String,int,int), public boolean java.lang.String.regionMatches(boolean,int,java.lang.String,int,int), public java.lang.String java.lang.String.replace(char,char), public java.lang.String java.lang.String.replace(java.lang.CharSequence,java.lang.CharSequence), public java.lang.String java.lang.String.replaceAll(java.lang.String,java.lang.String), public java.lang.String java.lang.String.replaceFirst(java.lang.String,java.lang.String), public [Ljava.lang.String; java.lang.String.split(java.lang.String), public [Ljava.lang.String; java.lang.String.split(java.lang.String,int), public boolean java.lang.String.startsWith(java.lang.String), public boolean java.lang.String.startsWith(java.lang.String,int), public java.lang.CharSequence java.lang.String.subSequence(int,int), public java.lang.String java.lang.String.substring(int), public java.lang.String java.lang.String.substring(int,int), public [C java.lang.String.toCharArray(), public java.lang.String java.lang.String.toLowerCase(), public java.lang.String java.lang.String.toLowerCase(java.util.Locale), public java.lang.String java.lang.String.toString(), public java.lang.String java.lang.String.toUpperCase(), public java.lang.String java.lang.String.toUpperCase(java.util.Locale), public java.lang.String java.lang.String.trim(), public static java.lang.String java.lang.String.copyValueOf(char[]), public static java.lang.String java.lang.String.copyValueOf(char[],int,int), private java.lang.StringIndexOutOfBoundsException java.lang.String.failedBoundsCheck(int,int,int), private native int java.lang.String.fastIndexOf(int,int), private char java.lang.String.foldCase(char), public static transient java.lang.String java.lang.String.format(java.lang.String,java.lang.Object[]), public static transient java.lang.String java.lang.String.format(java.util.Locale,java.lang.String,java.lang.Object[]), private java.lang.StringIndexOutOfBoundsException java.lang.String.indexAndLength(int), private static int java.lang.String.indexOf(java.lang.String,java.lang.String,int,int,char), private int java.lang.String.indexOfSupplementary(int,int), private int java.lang.String.lastIndexOfSupplementary(int,int), private java.lang.StringIndexOutOfBoundsException java.lang.String.startEndAndLength(int,int), public static java.lang.String java.lang.String.valueOf(char), public static java.lang.String java.lang.String.valueOf(double), public static java.lang.String java.lang.String.valueOf(float), public static java.lang.String java.lang.String.valueOf(int), public static java.lang.String java.lang.String.valueOf(long), public static java.lang.String java.lang.String.valueOf(java.lang.Object), public static java.lang.String java.lang.String.valueOf(boolean), public static java.lang.String java.lang.String.valueOf(char[]), public static java.lang.String java.lang.String.valueOf(char[],int,int)]
+[]
+[interface java.io.Serializable, interface java.lang.Comparable, interface java.lang.CharSequence]
+0
+17
+false
+true
+true
+false
+[int]
+4444
+null (null)
+[int]
+[int, int]
+1111 2222
+null (null)
+[int, int]
+1111 2222
+3333 (class java.lang.Integer)
+[class [I]
+10 (class java.lang.Integer)
+[class [Ljava.lang.String;]
+hello (class java.lang.String)
+[boolean, byte, char, double, float, int, long, short]
+true 0 1 2.0 3.0 4 5 6
+null (null)
+[boolean, byte, char, double, class java.lang.String, float, int, long, short]
+true 0 1 2.0  hello world 3.0 4 5 6
+null (null)
+[]
+java.lang.reflect.InvocationTargetException
+	at java.lang.reflect.Method.invoke(Native Method)
+	at Main.testMethodReflection(Main.java:210)
+	at Main.main(Main.java:270)
+Caused by: java.lang.ArithmeticException: surprise!
+	at Main.thrower(Main.java:218)
+	... 3 more
+ (class java.lang.String)
+yz (class java.lang.String)

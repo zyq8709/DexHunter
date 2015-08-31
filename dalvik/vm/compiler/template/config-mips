@@ -1,0 +1,93 @@
+
+# Copyright (C) 2009 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Configuration for ARMv5TE architecture targets.
+#
+
+# file header and basic definitions
+#import c/header.c
+import mips/header.S
+
+# C pre-processor defines for stub C instructions
+#import cstubs/stubdefs.c
+
+# highly-platform-specific defs
+import mips/platform.S
+
+# common defs for the C helpers; include this before the instruction handlers
+#import c/opcommon.c
+
+# opcode list; argument to op-start is default directory
+op-start mips
+
+    op TEMPLATE_SHL_LONG mips
+    op TEMPLATE_SHR_LONG mips
+    op TEMPLATE_USHR_LONG mips
+    op TEMPLATE_INT_TO_DOUBLE_VFP mips
+    op TEMPLATE_FLOAT_TO_DOUBLE_VFP mips
+    op TEMPLATE_ADD_DOUBLE_VFP mips
+    op TEMPLATE_DIV_DOUBLE_VFP mips
+    op TEMPLATE_MUL_DOUBLE_VFP mips
+    op TEMPLATE_SUB_DOUBLE_VFP mips
+    op TEMPLATE_ADD_FLOAT_VFP mips
+    op TEMPLATE_DIV_FLOAT_VFP mips
+    op TEMPLATE_MUL_FLOAT_VFP mips
+    op TEMPLATE_SUB_FLOAT_VFP mips
+    op TEMPLATE_FLOAT_TO_INT_VFP mips
+    op TEMPLATE_INT_TO_FLOAT_VFP mips
+    op TEMPLATE_DOUBLE_TO_FLOAT_VFP mips
+    op TEMPLATE_DOUBLE_TO_INT_VFP mips
+    op TEMPLATE_CMP_LONG mips
+    op TEMPLATE_CMPL_FLOAT_VFP mips
+    op TEMPLATE_CMPL_DOUBLE_VFP mips
+    op TEMPLATE_CMPG_FLOAT_VFP mips
+    op TEMPLATE_CMPG_DOUBLE_VFP mips
+    op TEMPLATE_MUL_LONG mips
+    op TEMPLATE_INTERPRET mips
+    op TEMPLATE_THROW_EXCEPTION_COMMON mips
+    op TEMPLATE_SQRT_DOUBLE_VFP mips
+    op TEMPLATE_SAVE_STATE mips
+    op TEMPLATE_RESTORE_STATE mips
+    op TEMPLATE_RETURN mips
+    op TEMPLATE_STRING_COMPARETO mips
+    op TEMPLATE_STRING_INDEXOF mips
+    op TEMPLATE_MEM_OP_DECODE mips
+    op TEMPLATE_MONITOR_ENTER mips
+    op TEMPLATE_MONITOR_ENTER_DEBUG mips
+    op TEMPLATE_INVOKE_METHOD_PREDICTED_CHAIN mips
+    op TEMPLATE_INVOKE_METHOD_CHAIN mips
+    op TEMPLATE_INVOKE_METHOD_NATIVE mips
+    op TEMPLATE_INVOKE_METHOD_NO_OPT mips
+
+    # New templates for ICS
+    op TEMPLATE_INVOKE_METHOD_PREDICTED_CHAIN_PROF mips
+    op TEMPLATE_INVOKE_METHOD_CHAIN_PROF mips
+    op TEMPLATE_INVOKE_METHOD_NATIVE_PROF mips
+    op TEMPLATE_INVOKE_METHOD_NO_OPT_PROF mips
+    op TEMPLATE_PERIODIC_PROFILING mips
+    op TEMPLATE_RETURN_PROF mips
+
+op-end
+
+# "helper" code for C; include if you use any of the C stubs (this generates
+# object code, so it's normally excluded)
+##import c/gotoTargets.c
+
+# end of defs; include this when cstubs/stubdefs.c is included
+#import cstubs/enddefs.c
+
+# common subroutines for asm
+import mips/footer.S

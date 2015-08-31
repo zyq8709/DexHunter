@@ -1,0 +1,65 @@
+# Copyright (C) 2008 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Configuration for MIPS architecture targets.
+#
+
+handler-style computed-goto
+handler-size 128
+# Need to specify split-ops to generate alt-ops at the end after
+# importing other files.
+split-ops
+
+# source for the instruction table stub
+asm-stub mips/stub.S
+
+# source for alternate entry stub
+asm-alt-stub mips/alt_stub.S
+
+# file header and basic definitions
+import c/header.cpp
+import mips/header.S
+
+# C pre-processor defines for stub C instructions
+import cstubs/stubdefs.cpp
+
+# highly-platform-specific defs
+import mips/platform.S
+
+# common defs for the C helpers; include this before the instruction handlers
+import c/opcommon.cpp
+
+# arch-specific entry point to interpreter
+import mips/entry.S
+
+# opcode list; argument to op-start is default directory
+op-start mips
+
+# OP_BREAKPOINT needs explicit testing
+    op OP_BREAKPOINT c
+
+op-end
+
+# "helper" code for C; include if you use any of the C stubs (this generates
+# object code, so it's normally excluded)
+import c/gotoTargets.cpp
+
+# end of defs; include this when cstubs/stubdefs.cpp is included
+import cstubs/enddefs.cpp
+
+# common subroutines for asm
+import mips/footer.S
+import mips/debug.cpp
+alt-ops

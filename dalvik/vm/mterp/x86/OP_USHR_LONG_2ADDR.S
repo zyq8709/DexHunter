@@ -1,0 +1,29 @@
+%verify "executed"
+    /*
+     * Long integer shift, 2addr version.  vA is 64-bit value/result, vB is
+     * 32-bit shift distance.
+     */
+    /* shl-long/2addr vA, vB */
+    /* ecx gets shift count */
+    /* Need to spill rIBASE */
+    /* rINSTw gets AA */
+    movzbl    rINSTbl,%ecx             # ecx<- BA
+    andb      $$0xf,rINSTbl            # rINST<- A
+    GET_VREG_WORD %eax rINST 0         # eax<- v[AA+0]
+    sarl      $$4,%ecx                 # ecx<- B
+    SPILL(rIBASE)
+    GET_VREG_WORD rIBASE rINST 1       # rIBASE<- v[AA+1]
+    GET_VREG_R %ecx %ecx               # ecx<- vBB
+    shrdl     rIBASE,%eax
+    shrl      %cl,rIBASE
+    testb     $$32,%cl
+    je        2f
+    movl      rIBASE,%eax
+    xorl      rIBASE,rIBASE
+2:
+    SET_VREG_WORD rIBASE rINST 1       # v[AA+1]<- rIBASE
+    FETCH_INST_OPCODE 1 %ecx
+    UNSPILL(rIBASE)
+    SET_VREG_WORD %eax rINST 0         # v[AA+0]<- eax
+    ADVANCE_PC 1
+    GOTO_NEXT_R %ecx

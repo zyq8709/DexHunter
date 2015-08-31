@@ -1,0 +1,1 @@
+Simple test that triggers GC by appending to a String.
