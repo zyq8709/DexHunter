@@ -347,7 +347,7 @@ static void Dalvik_dalvik_system_DexFile_closeDexFile(const u4* args,
  * Throws an exception on other failures.
  */
 
-//---------------------------added begin--------------------//
+//------------------------added begin----------------------//
 
 #include <asm/siginfo.h>
 #include "libdex/DexClass.h"
@@ -380,6 +380,7 @@ void timer_thread(sigval_t)
 {
     timer_flag=false;
     timer_delete(timerId);
+    ALOGI("GOT IT time up");
 }
 
 void* ReadThread(void *arg){
@@ -399,10 +400,12 @@ void* ReadThread(void *arg){
     }
 
     struct sigevent sev;
+
     sev.sigev_notify=SIGEV_THREAD;
     sev.sigev_value.sival_ptr=&timerId;
     sev.sigev_notify_function=timer_thread;
     sev.sigev_notify_attributes = NULL;
+
     timer_create(CLOCK_REALTIME,&sev,&timerId);
 
     struct itimerspec ts;
@@ -410,12 +413,14 @@ void* ReadThread(void *arg){
     ts.it_value.tv_nsec=0;
     ts.it_interval.tv_sec=0;
     ts.it_interval.tv_nsec=0;
+
     timer_settime(timerId,0,&ts,NULL);
 
     return NULL;
 }
 
-void ReadClassDataHeader(const uint8_t** pData, DexClassDataHeader *pHeader) {
+void ReadClassDataHeader(const uint8_t** pData,
+        DexClassDataHeader *pHeader) {
     pHeader->staticFieldsSize = readUnsignedLeb128(pData);
     pHeader->instanceFieldsSize = readUnsignedLeb128(pData);
     pHeader->directMethodsSize = readUnsignedLeb128(pData);
@@ -434,6 +439,7 @@ void ReadClassDataMethod(const uint8_t** pData, DexMethod* pMethod) {
 }
 
 DexClassData* ReadClassData(const uint8_t** pData) {
+
     DexClassDataHeader header;
 
     if (*pData == NULL) {
@@ -441,7 +447,9 @@ DexClassData* ReadClassData(const uint8_t** pData) {
     }
 
     ReadClassDataHeader(pData,&header);
+
     size_t resultSize = sizeof(DexClassData) + (header.staticFieldsSize * sizeof(DexField)) + (header.instanceFieldsSize * sizeof(DexField)) + (header.directMethodsSize * sizeof(DexMethod)) + (header.virtualMethodsSize * sizeof(DexMethod));
+
     DexClassData* result = (DexClassData*) malloc(resultSize);
 
     if (result == NULL) {
@@ -449,6 +457,7 @@ DexClassData* ReadClassData(const uint8_t** pData) {
     }
 
     uint8_t* ptr = ((uint8_t*) result) + sizeof(DexClassData);
+
     result->header = header;
 
     if (header.staticFieldsSize != 0) {
@@ -514,6 +523,7 @@ void writeLeb128(uint8_t ** ptr, uint32_t data)
 uint8_t* EncodeClassData(DexClassData *pData, int& len)
 {
     len=0;
+
     len+=unsignedLeb128Size(pData->header.staticFieldsSize);
     len+=unsignedLeb128Size(pData->header.instanceFieldsSize);
     len+=unsignedLeb128Size(pData->header.directMethodsSize);
@@ -556,6 +566,7 @@ uint8_t* EncodeClassData(DexClassData *pData, int& len)
     }
 
     uint8_t * result=store;
+
     writeLeb128(&store,pData->header.staticFieldsSize);
     writeLeb128(&store,pData->header.instanceFieldsSize);
     writeLeb128(&store,pData->header.directMethodsSize);
@@ -633,9 +644,11 @@ void* DumpClass(void *parament)
   strcpy(path,dumppath);
   strcat(path,"classdef");
   FILE *fp = fopen(path, "wb+");
+
   strcpy(path,dumppath);
   strcat(path,"extra");
   FILE *fp1 = fopen(path,"wb+");
+
   uint32_t mask=0x3ffff;
   char padding=0;
   const char* header="Landroid";
@@ -660,6 +673,7 @@ void* DumpClass(void *parament)
       bool pass=false;
       const DexClassDef *pClassDef = dexGetClassDef(pDvmDex->pDexFile, i);
       const char *descriptor = dexGetClassDescriptor(pDvmDex->pDexFile,pClassDef);
+
       if(!strncmp(header,descriptor,8)||!pClassDef->classDataOff)
       {
           pass=true;
@@ -667,6 +681,7 @@ void* DumpClass(void *parament)
       }
 
       clazz = dvmDefineClass(pDvmDex, descriptor, loader);
+
       if (!clazz) {
          continue;
       }
@@ -678,7 +693,7 @@ void* DumpClass(void *parament)
               ALOGI("GOT IT init: %s",descriptor);
           }
       }
-      
+           
       if(pClassDef->classDataOff<start || pClassDef->classDataOff>end)
       {
           need_extra=true;
@@ -696,6 +711,8 @@ void* DumpClass(void *parament)
               Method *method = &(clazz->directMethods[i]);
               uint32_t ac = (method->accessFlags) & mask;
 
+              ALOGI("GOT IT direct method name %s.%s",descriptor,method->name);
+
               if (!method->insns||ac&ACC_NATIVE) {
                   if (pData->directMethods[i].codeOff) {
                       need_extra = true;
@@ -709,11 +726,13 @@ void* DumpClass(void *parament)
 
               if (ac != pData->directMethods[i].accessFlags)
               {
+                  ALOGI("GOT IT method ac");
                   need_extra=true;
                   pData->directMethods[i].accessFlags=ac;
               }
 
               if (codeitem_off!=pData->directMethods[i].codeOff&&((codeitem_off>=start&&codeitem_off<=end)||codeitem_off==0)) {
+                  ALOGI("GOT IT method code");
                   need_extra=true;
                   pData->directMethods[i].codeOff=codeitem_off;
               }
@@ -733,6 +752,8 @@ void* DumpClass(void *parament)
                       code_item_len = 16+code->insnsSize*2;
                   }
 
+                  ALOGI("GOT IT method code changed");
+
                   fwrite(item,1,code_item_len,fp1);
                   fflush(fp1);
                   total_pointer+=code_item_len;
@@ -750,6 +771,8 @@ void* DumpClass(void *parament)
               Method *method = &(clazz->virtualMethods[i]);
               uint32_t ac = (method->accessFlags) & mask;
 
+              ALOGI("GOT IT virtual method name %s.%s",descriptor,method->name);
+
               if (!method->insns||ac&ACC_NATIVE) {
                   if (pData->virtualMethods[i].codeOff) {
                       need_extra = true;
@@ -760,13 +783,16 @@ void* DumpClass(void *parament)
               }
 
               u4 codeitem_off = u4((const u1 *)method->insns - 16 - pDexFile->baseAddr);
+
               if (ac != pData->virtualMethods[i].accessFlags)
               {
+                  ALOGI("GOT IT method ac");
                   need_extra=true;
                   pData->virtualMethods[i].accessFlags=ac;
               }
 
               if (codeitem_off!=pData->virtualMethods[i].codeOff&&((codeitem_off>=start&&codeitem_off<=end)||codeitem_off==0)) {
+                  ALOGI("GOT IT method code");
                   need_extra=true;
                   pData->virtualMethods[i].codeOff=codeitem_off;
               }
@@ -777,7 +803,6 @@ void* DumpClass(void *parament)
                   DexCode *code = (DexCode*)((const u1*)method->insns-16);
                   uint8_t *item=(uint8_t *) code;
                   int code_item_len = 0;
-
                   if (code->triesSize) {
                       const u1 *handler_data = dexGetCatchHandlerData(code);
                       const u1** phandler=(const u1**)&handler_data;
@@ -786,6 +811,8 @@ void* DumpClass(void *parament)
                   }else{
                       code_item_len = 16+code->insnsSize*2;
                   }
+
+                  ALOGI("GOT IT method code changed");
 
                   fwrite(item,1,code_item_len,fp1);
                   fflush(fp1);
@@ -804,6 +831,7 @@ classdef:
        uint8_t *p = (uint8_t *)&temp;
 
        if (need_extra) {
+           ALOGI("GOT IT classdata before");
            int class_data_len = 0;
            uint8_t *out = EncodeClassData(pData,class_data_len);
            if (!out) {
@@ -819,6 +847,7 @@ classdef:
                total_pointer++;
            }
            free(out);
+           ALOGI("GOT IT classdata written");
        }else{
            if (pData) {
                free(pData);
@@ -848,17 +877,6 @@ classdef:
   int len=0;  
   char *addr=NULL;
   struct stat st;
-
-  strcpy(path,dumppath);
-  strcat(path,"part0");
-  fp1=fopen(path,"rb");
-  char reg=0;
-  for (uint32_t i=0;i<16;i++) {
-      fread(&reg,1,1,fp1);
-      fwrite(&reg,1,1,fp);
-      fflush(fp);
-  }
-  fclose(fp1);
 
   strcpy(path,dumppath);
   strcat(path,"part1");
@@ -953,13 +971,12 @@ classdef:
   fclose(fp);
   delete path;
 
-
   time=dvmGetRelativeTimeMsec();
   ALOGI("GOT IT end: %d ms",time);
 
   return NULL;
 }
-//---------------------------added end--------------------//
+//------------------------added end----------------------//
 
 static void Dalvik_dalvik_system_DexFile_defineClassNative(const u4* args,
     JValue* pResult)
@@ -990,7 +1007,7 @@ static void Dalvik_dalvik_system_DexFile_defineClassNative(const u4* args,
     /* once we load something, we can't unmap the storage */
     pDexOrJar->okayToFree = false;
 
-//---------------------------added begin--------------------//
+//------------------------added begin----------------------//
     int uid=getuid();
 
     if (uid) {
@@ -999,8 +1016,10 @@ static void Dalvik_dalvik_system_DexFile_defineClassNative(const u4* args,
             if (readable) {
                 readable=false;
                 pthread_mutex_unlock(&read_mutex);
+
                 pthread_t read_thread;
                 pthread_create(&read_thread, NULL, ReadThread, NULL);
+
             }else{
                 pthread_mutex_unlock(&read_mutex);
             }
@@ -1014,26 +1033,16 @@ static void Dalvik_dalvik_system_DexFile_defineClassNative(const u4* args,
             if (flag) {
                 flag = false;
                 pthread_mutex_unlock(&mutex);
+ 
                 DexFile* pDexFile=pDvmDex->pDexFile;
                 MemMapping * mem=&pDvmDex->memMap;
 
                 char * temp=new char[100];
                 strcpy(temp,dumppath);
-                strcat(temp,"part0");
-                FILE *fp = fopen(temp, "wb+");
-                const u1 *addr=(const u1*)mem->addr;
-                int length=16;
-                for (int i=0;i<16;i++) {
-                    fwrite(addr+i,1,1,fp);
-                    fflush(fp);
-                }
-                fclose(fp);
-
-                strcpy(temp,dumppath);
                 strcat(temp,"part1");
-                fp = fopen(temp, "wb+");
-                addr = (const u1*)mem->addr+16;
-                length=int(pDexFile->baseAddr+pDexFile->pHeader->classDefsOff-addr)-16;
+                FILE *fp = fopen(temp, "wb+");
+                const u1 *addr = (const u1*)mem->addr;
+                int length=int(pDexFile->baseAddr+pDexFile->pHeader->classDefsOff-addr);
                 fwrite(addr,1,length,fp);
                 fflush(fp);
                 fclose(fp);
@@ -1050,14 +1059,16 @@ static void Dalvik_dalvik_system_DexFile_defineClassNative(const u4* args,
 
                 param.loader=loader;
                 param.pDvmDex=pDvmDex;
+
                 pthread_t dumpthread;
-                dvmCreateInternalThread(&dumpthread,"ClassDumper",DumpClass,(void*)&param);
+                dvmCreateInternalThread(&dumpthread,"ClassDumper",DumpClass,(void*)&param);                             
+
             }else{
                 pthread_mutex_unlock(&mutex);
             }
         }
     }
-//---------------------------added end--------------------//
+//------------------------added end----------------------//
 
     clazz = dvmDefineClass(pDvmDex, descriptor, loader);
     Thread* self = dvmThreadSelf();
