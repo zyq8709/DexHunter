@@ -18,6 +18,7 @@ Tips:
 DexHunter has its own limitation. As the hardening services develop, DexHunter may be not effective in the future. If you are interested, you can amend DexHunter to keep pace with hardening services continuously.
 
 File description:
+
 "slide.pptx" is the presentation material of HITCON 2015 depicting the design and implementation of DexHunter.
 
 "demo.mp4" is the demonstration video of unpacking a hardened app by Ali.
