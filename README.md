@@ -32,5 +32,5 @@ File description:
 "dalvik" directory is the modified runtime for DVM.
 
 
-
+If you have any question, please contact me via emails to zyq8709@gmail.com.
 
