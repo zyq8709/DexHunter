@@ -15,7 +15,7 @@ Tips:
 
 4)The feature string may be changed along with the evolution of hardening services.
 
-5)If the "fwrite" and other libc function fails, maybe these functions are hooked by hardening sevices. As a result, you cannot dump the memory via them. You can bypass this limitation by calling relevant system calls directly.
+5)If the "fwrite" and other libc functions fail, maybe these functions are hooked by hardening sevices. As a result, you cannot dump the memory via them. You can bypass this limitation by calling relevant system calls directly.
 
 DexHunter has its own limitation. As the hardening services develop, DexHunter may be not effective in the future. If you are interested, you can amend DexHunter to keep pace with hardening services continuously.
 
