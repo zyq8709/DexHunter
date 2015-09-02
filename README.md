@@ -37,3 +37,12 @@ File description:
 
 If you have any question, please contact me via emails to zyq8709@gmail.com.
 
+If you use this code, please cite the following paper. Thanks!
+
+Yueqian Zhang, Xiapu Luo, and Haoyang Yin, DexHunter: Toward Extracting Hidden Code from Packed Android Applications, Proceedings of the 20th European Symposium on Research in Computer Security (ESORICS), Vienna, Austria, September 2015.
+
+@inproceedings{DexHunter15,
+Title = {DexHunter: Toward Extracting Hidden Code from Packed Android Applications},
+Author = {Yueqian Zhang and Xiapu Luo and Haoyang Yin},
+Booktitle = {Proc. ESORICS},
+Year = {2015}}
