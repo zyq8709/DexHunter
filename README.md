@@ -1,4 +1,7 @@
 # DexHunter
+
+#####NOTICE： The feature string is very important. It may be changed along with the evolution of hardening services. If it is incorrect, the unpacking process cannot be triggered.
+
 DexHunter aims at unpacking hardened dex file automatically.
 
 DexHunter is based on the source code of Android runtime. It is composed of modified ART and DVM runtime. You can use the modified runtime to replace the original content in Android source codes (Android 4.4.3). The modification is mainly in "art/runtime/class_linker.cc" (ART) and "dalvik/vm/native/dalvik_system_DexFile.cpp" (DVM).
