@@ -48,3 +48,7 @@ Title = {DexHunter: Toward Extracting Hidden Code from Packed Android Applicatio
 Author = {Yueqian Zhang and Xiapu Luo and Haoyang Yin},
 Booktitle = {Proc. ESORICS},
 Year = {2015}}
+
+#####Comment: 
+
+I have tested the samples from 360 in July under DVM. The feature string is changed to "/data/app/XXX.apk" (referring to "silde.pptx"). This string is very important. If it is incorrect, the unpacking process will fail.
