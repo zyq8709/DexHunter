@@ -1,6 +1,6 @@
 # DexHunter
 
-#####NOTICE： The feature string is very important. It may be changed along with the evolution of hardening services. If it is incorrect, the unpacking process cannot be triggered.
+#####NOTICE： The feature string is very important. It may be changed along with the evolution of hardening services. If it is incorrect, the unpacking process cannot be triggered. DexHunter leverages "fwrite" and other libc functions to manipulate files. But these functions are hooked by hardening services resulting in the crash of the process. As a result, you cannot utilize the provided image to unpack the latest hardedning services. You had better replace these functions with the direct system calls to avoid crash.
 
 DexHunter aims at unpacking hardened dex file automatically.
 
